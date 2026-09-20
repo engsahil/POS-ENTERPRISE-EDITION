@@ -1,0 +1,20 @@
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.loading {
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+  padding: var(--sp-4) 0;
+}
+
+@media (max-width: 639px) {
+  .headerActions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--sp-2);
+  }
+}

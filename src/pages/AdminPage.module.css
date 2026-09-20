@@ -1,0 +1,88 @@
+/* ---------- Panel layout ---------- */
+
+.layout {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: var(--sp-5);
+  align-items: start;
+}
+
+.panel {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.panel:focus {
+  outline: none;
+}
+
+.panelTitle {
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--color-text-faint);
+}
+
+/* ---------- Default-password notice ---------- */
+
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  width: 100%;
+  text-align: left;
+  padding: var(--sp-4);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-warning-soft);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 24%, transparent);
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.notice:hover {
+  border-color: color-mix(in srgb, var(--color-warning) 45%, transparent);
+}
+
+.notice:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.noticeIcon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--color-warning);
+}
+
+.noticeTitle {
+  display: block;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  color: var(--c-ink-800);
+}
+
+.noticeBody {
+  display: block;
+  margin-top: var(--sp-1);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-snug);
+  color: var(--c-ink-700);
+  max-width: 68ch;
+  text-wrap: pretty;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 899px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-3);
+  }
+}

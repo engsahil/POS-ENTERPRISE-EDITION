@@ -1,0 +1,129 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.title {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+}
+
+.explain {
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--lh-snug);
+  max-width: 72ch;
+}
+
+.support {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 260px));
+  justify-content: start;
+  gap: var(--sp-2) var(--sp-6);
+  margin: 0;
+  padding: var(--sp-3);
+  background-color: var(--color-surface-alt);
+  border-radius: var(--radius-md);
+}
+
+.supportRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+}
+
+.supportRow dt {
+  color: var(--color-text-muted);
+}
+
+.supportRow dd {
+  margin: 0;
+  color: var(--color-text);
+  font-weight: var(--fw-medium);
+  text-align: right;
+}
+
+.note {
+  font-size: var(--fs-sm);
+  color: var(--c-ink-800);
+  line-height: var(--lh-snug);
+  padding: var(--sp-3);
+  background-color: var(--color-warning-soft);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 30%, transparent);
+  border-radius: var(--radius-md);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.status {
+  font-size: var(--fs-sm);
+  color: var(--color-success);
+  font-weight: var(--fw-medium);
+}
+
+.error {
+  font-size: var(--fs-sm);
+  color: var(--color-danger);
+  padding: var(--sp-3);
+  background-color: var(--color-danger-soft);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 24%, transparent);
+  border-radius: var(--radius-md);
+}
+
+.tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  border-top: 1px solid var(--color-border-subtle);
+  padding-top: var(--sp-3);
+}
+
+.previewWrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.previewLabel {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}
+
+.preview {
+  margin: 0;
+  padding: var(--sp-3);
+  background-color: #ffffff;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.45;
+  color: #000000;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+@media (max-width: 639px) {
+  .actions > *,
+  .tools > * {
+    width: 100%;
+  }
+}

@@ -1,0 +1,181 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  padding: var(--sp-5);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.divider {
+  height: 1px;
+  background-color: var(--color-border-subtle);
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+
+/* ---------- Select, styled to match Input ---------- */
+
+.selectWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-secondary);
+}
+
+.selectField {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.selectField:hover {
+  border-color: var(--c-taupe-300);
+}
+
+.selectField:focus-within {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+
+/* Chevron drawn with a background image so no extra element is needed. */
+.selectField::after {
+  content: '';
+  position: absolute;
+  right: var(--sp-3);
+  width: 9px;
+  height: 9px;
+  border-right: 1.5px solid var(--color-text-faint);
+  border-bottom: 1.5px solid var(--color-text-faint);
+  transform: translateY(-2px) rotate(45deg);
+  pointer-events: none;
+}
+
+.select {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  padding-inline: var(--sp-3);
+  padding-right: var(--sp-8);
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--fs-md);
+  color: var(--color-text);
+  border-radius: inherit;
+  appearance: none;
+  cursor: pointer;
+}
+
+.select:focus,
+.select:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.hint {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  line-height: var(--lh-snug);
+}
+
+/* ---------- Availability ---------- */
+
+.toggleRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  cursor: pointer;
+}
+
+.checkbox {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.toggleLabel {
+  display: block;
+  font-size: var(--fs-md);
+  color: var(--color-text);
+}
+
+.toggleHint {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}
+
+.failure {
+  font-size: var(--fs-sm);
+  color: var(--color-danger);
+  padding: var(--sp-3) var(--sp-4);
+  background-color: var(--color-danger-soft);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 24%, transparent);
+  border-radius: var(--radius-md);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+}
+
+@media (pointer: coarse) {
+  .select {
+    height: var(--tap-min);
+    /* 16px avoids iOS zoom-on-focus */
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 639px) {
+  .card {
+    padding: var(--sp-4);
+  }
+
+  .pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .actions {
+    flex-direction: column-reverse;
+  }
+
+  .actions > * {
+    width: 100%;
+  }
+}

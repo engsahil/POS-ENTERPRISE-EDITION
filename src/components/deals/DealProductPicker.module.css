@@ -1,0 +1,192 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.label {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-secondary);
+}
+
+.empty,
+.hint {
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+  padding: var(--sp-3);
+  background-color: var(--color-surface-alt);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+}
+
+.lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.line {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.line:last-child {
+  border-bottom: none;
+}
+
+.lineMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.lineName {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lineMeta {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.lineControls {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-shrink: 0;
+}
+
+.qty {
+  width: 58px;
+  height: 32px;
+  padding-inline: var(--sp-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  color: var(--color-text);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.qty:focus,
+.qty:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+
+.lineTotal {
+  min-width: 72px;
+  text-align: right;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Add row ---------- */
+
+.picker {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto;
+  gap: var(--sp-2);
+  align-items: center;
+}
+
+.selectField {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.selectField:hover {
+  border-color: var(--c-taupe-300);
+}
+
+.selectField:focus-within {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+
+.selectField::after {
+  content: '';
+  position: absolute;
+  right: var(--sp-3);
+  width: 8px;
+  height: 8px;
+  border-right: 1.5px solid var(--color-text-faint);
+  border-bottom: 1.5px solid var(--color-text-faint);
+  transform: translateY(-2px) rotate(45deg);
+  pointer-events: none;
+}
+
+.select {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  padding-inline: var(--sp-3);
+  padding-right: var(--sp-7);
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--fs-md);
+  color: var(--color-text);
+  border-radius: inherit;
+  appearance: none;
+  cursor: pointer;
+}
+
+.select:focus,
+.select:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@media (pointer: coarse) {
+  .select {
+    height: var(--tap-min);
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 639px) {
+  .picker {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .line {
+    flex-wrap: wrap;
+  }
+
+  .lineControls {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

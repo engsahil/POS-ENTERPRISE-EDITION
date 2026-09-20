@@ -1,0 +1,278 @@
+/*
+ * Thermal receipt sheet.
+ *
+ * Widths are physical (mm) so the on-screen preview matches the paper. The
+ * grid uses fixed money columns and one flexible name column, which is what
+ * guarantees totals are never squeezed off the paper by a long item name.
+ */
+
+.sheet {
+  /* Set per width below; used by every child that needs the paper width. */
+  --paper: 80mm;
+  --pad: 4mm;
+
+  box-sizing: border-box;
+  width: var(--paper);
+  max-width: 100%;
+  padding: var(--pad);
+  margin: 0 auto;
+
+  background-color: #ffffff;
+  color: #000000;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.45;
+
+  /* Nothing may spill sideways, at any content length. */
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.w80 {
+  --paper: 80mm;
+  --pad: 4mm;
+  font-size: 11px;
+}
+
+/* 58mm is much narrower: smaller type and tighter columns keep four columns
+   readable without wrapping the numbers. */
+.w58 {
+  --paper: 58mm;
+  --pad: 3mm;
+  font-size: 9.5px;
+  line-height: 1.4;
+}
+
+/* ---------- Header ---------- */
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5mm;
+  text-align: center;
+}
+
+.logo {
+  max-width: 26mm;
+  max-height: 16mm;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.w58 .logo {
+  max-width: 20mm;
+  max-height: 13mm;
+}
+
+.name {
+  font-size: 1.35em;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  /* A long restaurant name wraps onto more lines rather than clipping. */
+  max-width: 100%;
+}
+
+.contact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3mm;
+  max-width: 100%;
+}
+
+.contactLine {
+  font-size: 0.92em;
+  /* Preserve deliberate line breaks in a multi-line address. */
+  white-space: pre-line;
+}
+
+.info {
+  font-size: 0.92em;
+  white-space: pre-line;
+  max-width: 100%;
+}
+
+/* ---------- Separators ---------- */
+
+.rule {
+  border-top: 1px dashed #000000;
+  margin: 2mm 0;
+}
+
+/* ---------- Order meta ---------- */
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4mm;
+  margin: 0;
+}
+
+.metaRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 2mm;
+}
+
+.metaRow dt {
+  flex-shrink: 0;
+}
+
+.metaValue {
+  margin: 0;
+  text-align: right;
+  font-weight: 700;
+  min-width: 0;
+}
+
+/* ---------- Items ---------- */
+
+/*
+ * Four columns: name (flexible) + qty/price/amount (fixed).
+ * The fixed columns never shrink, so amounts always print in full.
+ */
+.itemsHead,
+.itemRow {
+  display: grid;
+  grid-template-columns: 1fr 7mm 14mm 16mm;
+  gap: 1.5mm;
+  align-items: start;
+}
+
+.w58 .itemsHead,
+.w58 .itemRow {
+  grid-template-columns: 1fr 6mm 11mm 13mm;
+  gap: 1mm;
+}
+
+.itemsHead {
+  font-weight: 700;
+  padding-bottom: 1mm;
+  border-bottom: 1px solid #000000;
+  margin-bottom: 1.5mm;
+}
+
+.items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5mm;
+}
+
+.item {
+  min-width: 0;
+}
+
+.colItem {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.colQty {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  /* Never split "Qty" or a multi-digit quantity across two lines. */
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
+.colPrice,
+.colTotal {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  /* Amounts must print whole; they are the reason for the fixed columns. */
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
+.size {
+  font-weight: 400;
+}
+
+.dealTag {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.dealContents {
+  list-style: none;
+  margin: 0.5mm 0 0;
+  padding-left: 3mm;
+}
+
+.dealContent {
+  font-size: 0.88em;
+  overflow-wrap: anywhere;
+}
+
+.dealContent::before {
+  content: '- ';
+}
+
+/* ---------- Totals ---------- */
+
+.totals {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6mm;
+  margin: 0;
+}
+
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 2mm;
+}
+
+.totalRow dt {
+  min-width: 0;
+}
+
+.totalRow dd {
+  margin: 0;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.grandRow {
+  margin-top: 1mm;
+  padding-top: 1.5mm;
+  border-top: 1px solid #000000;
+  font-size: 1.2em;
+  font-weight: 700;
+}
+
+/* ---------- Footer ---------- */
+
+.count {
+  text-align: center;
+  font-size: 0.92em;
+}
+
+.footer {
+  margin-top: 2mm;
+  text-align: center;
+  font-size: 0.95em;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Print ---------- */
+
+@media print {
+  .sheet {
+    width: var(--paper);
+    margin: 0;
+    padding: var(--pad);
+    /* Avoid a trailing blank page from residual margins. */
+    box-shadow: none;
+  }
+}

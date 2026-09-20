@@ -1,0 +1,14 @@
+node_modules
+dist
+dist-ssr
+*.local
+.DS_Store
+.env
+.env.*
+!.env.example
+*.log
+.vite
+
+# Licence signing key. NEVER commit or ship this: anyone holding it can mint
+# valid licence keys. Only the public key belongs in the application.
+.secrets/

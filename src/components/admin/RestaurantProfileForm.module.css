@@ -1,0 +1,161 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.loading {
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+  padding: var(--sp-4) 0;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-5);
+  gap: var(--sp-5);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.divider {
+  height: 1px;
+  background-color: var(--color-border-subtle);
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+}
+
+.status {
+  min-height: 20px;
+  font-size: var(--fs-sm);
+}
+
+.confirmation {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: var(--color-success);
+  font-weight: var(--fw-medium);
+  animation: fade-in var(--dur-normal) var(--ease-out);
+}
+
+.unsaved {
+  color: var(--color-text-muted);
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.failure {
+  font-size: var(--fs-sm);
+  color: var(--color-danger);
+  padding: var(--sp-3) var(--sp-4);
+  background-color: var(--color-danger-soft);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 24%, transparent);
+  border-radius: var(--radius-md);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confirmation {
+    animation: none;
+  }
+}
+
+@media (max-width: 639px) {
+  .card {
+    padding: var(--sp-4);
+    gap: var(--sp-4);
+  }
+
+  .pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: var(--sp-3);
+  }
+
+  .buttons {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-2);
+  }
+
+  .status {
+    text-align: center;
+  }
+}
+
+/* ---------- Inline checkbox row ---------- */
+
+.checkRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  cursor: pointer;
+  padding-top: var(--sp-6);
+}
+
+.checkbox {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.checkLabel {
+  display: block;
+  font-size: var(--fs-md);
+  color: var(--color-text);
+}
+
+.checkHint {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  line-height: var(--lh-snug);
+}
+
+@media (max-width: 639px) {
+  .checkRow {
+    padding-top: 0;
+  }
+}

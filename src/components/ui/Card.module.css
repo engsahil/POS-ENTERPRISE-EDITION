@@ -1,0 +1,33 @@
+.card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.flat {
+  box-shadow: none;
+}
+
+.raised {
+  box-shadow: var(--shadow-sm);
+}
+
+.none {
+  padding: 0;
+}
+.sm {
+  padding: var(--sp-4);
+}
+.md {
+  padding: var(--sp-6);
+}
+.lg {
+  padding: var(--sp-8);
+}
+
+@media (max-width: 639px) {
+  .md,
+  .lg {
+    padding: var(--sp-5);
+  }
+}

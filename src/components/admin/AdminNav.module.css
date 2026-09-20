@@ -1,0 +1,60 @@
+.nav {
+  min-width: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: sticky;
+  top: 0;
+}
+
+.item {
+  appearance: none;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.item:hover {
+  background-color: var(--color-hover);
+  color: var(--color-text);
+}
+
+.item:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 1px;
+}
+
+.active {
+  background-color: var(--color-selected);
+  color: var(--color-text);
+}
+
+/* Horizontal scroller on narrow screens. */
+@media (max-width: 899px) {
+  .list {
+    flex-direction: row;
+    position: static;
+    overflow-x: auto;
+    gap: var(--sp-1);
+    padding-bottom: var(--sp-2);
+    scrollbar-width: thin;
+  }
+
+  .item {
+    flex-shrink: 0;
+  }
+}

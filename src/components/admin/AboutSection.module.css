@@ -1,0 +1,108 @@
+/* ---------- Legal document links ---------- */
+
+.docs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.docLink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-4);
+  text-align: left;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
+}
+
+.docLink:hover {
+  border-color: var(--color-border-strong);
+  background-color: var(--color-surface-alt);
+}
+
+.docLink:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.docText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.docTitle {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
+  color: var(--color-text);
+}
+
+.docMeta {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}
+
+.chevron {
+  flex-shrink: 0;
+  font-size: var(--fs-lg);
+  line-height: 1;
+  color: var(--color-text-faint);
+}
+
+.backBar {
+  display: flex;
+  align-items: center;
+  padding-bottom: var(--sp-1);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+/* ---------- Vendor attribution ---------- */
+
+.vendor {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--sp-4);
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-primary);
+  color: var(--color-primary-contrast);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.vendorText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.poweredBy {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+  letter-spacing: var(--tracking-wide);
+}
+
+.vendorTagline {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}

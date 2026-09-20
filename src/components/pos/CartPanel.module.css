@@ -1,0 +1,258 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.title {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+}
+
+.count {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Empty ---------- */
+
+.empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-1);
+  padding: var(--sp-8) var(--sp-4);
+  text-align: center;
+}
+
+.emptyText {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-secondary);
+}
+
+.emptyHint {
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+  max-width: 28ch;
+}
+
+/* ---------- Lines ---------- */
+
+.lines {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.line {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.line:last-child {
+  border-bottom: none;
+}
+
+.lineMain {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.lineName {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lineMeta {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.lineControls {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.stepButton {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.stepButton:hover {
+  background-color: var(--color-hover);
+  color: var(--color-text);
+}
+
+.stepButton:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+.quantity {
+  min-width: 34px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  border-inline: 1px solid var(--color-border-subtle);
+}
+
+.lineTotal {
+  margin-left: auto;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.remove {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-faint);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.remove:hover {
+  background-color: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.remove:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 1px;
+}
+
+/* ---------- Totals ---------- */
+
+.footer {
+  border-top: 1px solid var(--color-border);
+  padding: var(--sp-4);
+  background-color: var(--color-surface-alt);
+}
+
+.totals {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+
+.totalRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+}
+
+.totalRow dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.grandRow {
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--fs-md);
+  color: var(--color-text);
+}
+
+.grandValue {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+}
+
+.actions {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+/*
+ * Touch devices need a 44px minimum target. The visual control stays compact
+ * so the cart is not dominated by chrome; the hit area is expanded with a
+ * pseudo-element instead, which costs no layout space.
+ */
+@media (pointer: coarse) {
+  .stepButton,
+  .remove {
+    position: relative;
+    width: 36px;
+    height: 36px;
+  }
+
+  .stepButton::after,
+  .remove::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
+
+  .quantity {
+    min-width: 44px;
+    height: 44px;
+  }
+}

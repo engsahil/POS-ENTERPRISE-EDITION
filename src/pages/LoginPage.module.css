@@ -1,0 +1,201 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-6);
+  min-height: 100%;
+  padding: var(--sp-6);
+  padding-top: calc(var(--sp-6) + var(--safe-top));
+  padding-bottom: calc(var(--sp-6) + var(--safe-bottom));
+  background-color: var(--color-bg);
+}
+
+.panel {
+  width: 100%;
+  max-width: 380px;
+  padding: var(--sp-8);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  animation: panel-enter var(--dur-slow) var(--ease-out) both;
+}
+
+@keyframes panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- Brand ---------- */
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: var(--sp-7);
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  margin-bottom: var(--sp-5);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-primary);
+  color: var(--color-primary-contrast);
+}
+
+.title {
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--lh-tight);
+  color: var(--color-text);
+}
+
+.subtitle {
+  margin-top: var(--sp-2);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-snug);
+  color: var(--color-text-muted);
+  max-width: 32ch;
+  text-wrap: pretty;
+}
+
+/* ---------- Form ---------- */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.passwordField {
+  position: relative;
+}
+
+/* Leave room for the reveal toggle */
+.passwordInput {
+  padding-right: var(--sp-10);
+}
+
+.reveal {
+  position: absolute;
+  right: var(--sp-1);
+  bottom: 0;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-faint);
+  transition:
+    color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
+}
+
+.reveal:hover {
+  color: var(--color-text);
+  background-color: var(--color-hover);
+}
+
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border-radius: var(--radius-md);
+  background-color: var(--color-danger-soft);
+  color: var(--c-red-500);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-snug);
+  animation: error-enter var(--dur-fast) var(--ease-out) both;
+}
+
+@keyframes error-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.errorIcon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.submit {
+  margin-top: var(--sp-2);
+}
+
+.version {
+  font-size: var(--fs-xs);
+  color: var(--color-text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 639px) {
+  .panel {
+    padding: var(--sp-6);
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+@media (pointer: coarse) {
+  .reveal {
+    height: var(--tap-min);
+    width: var(--tap-min);
+  }
+}
+
+/* ---------- First-run setup password ---------- */
+
+.setup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  margin-bottom: var(--sp-5);
+  background-color: var(--color-warning-soft);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 30%, transparent);
+  border-radius: var(--radius-md);
+}
+
+.setupTitle {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--c-ink-800);
+}
+
+.setupBody {
+  font-size: var(--fs-xs);
+  line-height: var(--lh-snug);
+  color: var(--c-ink-700);
+}
+
+.setupCode {
+  font-family: var(--font-mono);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-2) var(--sp-3);
+  text-align: center;
+  user-select: all;
+}

@@ -1,0 +1,79 @@
+/* ---------------------------------------------------------------------------
+   Thermal print stylesheet.
+
+   Targets common 58mm and 80mm mini thermal printers driven through the
+   browser's print dialog. The receipt is the ONLY thing that reaches paper:
+   application chrome is removed from the printed flow entirely (display:none,
+   not visibility:hidden), which is what prevents a blank leading page.
+
+   The `@page` size itself is injected at print time by printService, because
+   `@page` cannot read custom properties or be toggled by a class.
+   --------------------------------------------------------------------------- */
+
+@media print {
+  html,
+  body {
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    /* Thermal output is monochrome; stop the browser rescaling text. */
+    -webkit-text-size-adjust: none;
+    text-size-adjust: none;
+  }
+
+  /*
+   * Remove everything except the print container from the printed flow.
+   * Using display:none means those subtrees generate no boxes at all, so
+   * they cannot produce an empty first page or push the receipt down.
+   */
+  body > *:not(.print-root) {
+    display: none !important;
+  }
+
+  .print-root,
+  .print-root > * {
+    display: block !important;
+    position: static !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    width: auto !important;
+    height: auto !important;
+    max-height: none !important;
+    /* Scrollable ancestors would otherwise clip the receipt to one screen. */
+    flex: none !important;
+  }
+
+  .print-root * {
+    box-shadow: none !important;
+  }
+
+  /* Explicitly excluded from print, e.g. the width toggle and buttons. */
+  [data-print-hide] {
+    display: none !important;
+  }
+
+  /*
+   * Keep a receipt from being split mid-line, and never leave a widow line
+   * of totals on a second page.
+   */
+  [data-receipt-width] li,
+  [data-receipt-width] dl,
+  [data-receipt-width] header {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /*
+   * Trailing empty space is what causes a spurious second page on a
+   * continuous roll: the last element must not add margin below itself.
+   */
+  [data-receipt-width] > *:last-child {
+    margin-bottom: 0 !important;
+  }
+}

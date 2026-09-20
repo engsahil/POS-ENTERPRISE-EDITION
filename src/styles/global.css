@@ -1,0 +1,166 @@
+@import './tokens.css';
+@import './reset.css';
+@import './print.css';
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-md);
+  line-height: var(--lh-normal);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  overscroll-behavior-y: none;
+  font-synthesis-weight: none;
+  text-rendering: optimizeLegibility;
+}
+
+/* Interactive surfaces should not feel like a document */
+button,
+[role='button'],
+nav a,
+label {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+::selection {
+  background-color: var(--color-accent-soft);
+  color: var(--color-text);
+}
+
+/* ---------- Utilities ---------- */
+
+.u-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.u-numeric {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+.u-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Scrollbars ---------- */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-sand-400) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--c-sand-400);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: var(--radius-full);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--c-taupe-500);
+}
+
+/* ---------- Page shell ----------
+   Every screen uses this wrapper so rhythm and gutters stay identical.
+-------------------------------------------------------------------- */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  /* Fill the scroll container so empty states centre in real space
+     instead of stranding a short card at the top of the viewport. */
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: var(--layout-content-max);
+  margin-inline: auto;
+  padding: var(--sp-10) var(--sp-10) var(--sp-10);
+  gap: var(--sp-7);
+  animation: page-enter var(--dur-slow) var(--ease-out) both;
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .page {
+    padding: var(--sp-8) var(--sp-6);
+    gap: var(--sp-6);
+  }
+}
+
+@media (max-width: 639px) {
+  .page {
+    padding: var(--sp-6) var(--sp-4);
+    gap: var(--sp-5);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Installed application
+   In a standalone window there is no browser chrome, so the app owns the full
+   viewport including any display cutout. These rules only apply when running
+   installed, so the browser experience is unchanged.
+   --------------------------------------------------------------------------- */
+
+@media (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+  body {
+    /* Respect notches and home indicators. */
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+    padding-left: var(--safe-left);
+    padding-right: var(--safe-right);
+
+    /* Rubber-band scrolling reveals the page background and looks broken
+       in an app window. */
+    overscroll-behavior: none;
+  }
+
+  /* Chrome text selection across an app UI reads as a bug, not a feature.
+     Inputs and receipts stay selectable. */
+  body {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  input,
+  textarea,
+  select,
+  [data-receipt-width],
+  [data-receipt-width] * {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  /* Suppress the tap highlight flash on touch targets. */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}

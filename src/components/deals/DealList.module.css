@@ -1,0 +1,238 @@
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--color-border-subtle);
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.row:hover {
+  background-color: var(--color-surface-alt);
+}
+
+.rowMuted .thumb,
+.rowMuted .main {
+  opacity: 0.62;
+}
+
+.thumb {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-alt);
+  overflow: hidden;
+}
+
+.thumbImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumbEmpty {
+  display: grid;
+  place-items: center;
+  color: var(--color-text-faint);
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.name {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge {
+  flex-shrink: 0;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  border-radius: var(--radius-full);
+  padding: 1px var(--sp-2);
+  border: 1px solid transparent;
+}
+
+.badgeLive {
+  color: var(--color-success);
+  background-color: var(--color-success-soft);
+  border-color: color-mix(in srgb, var(--color-success) 22%, transparent);
+}
+
+.badgeDraft {
+  color: var(--color-text-secondary);
+  background-color: var(--color-surface-sunken);
+  border-color: var(--color-border);
+}
+
+.badgeWarn {
+  color: var(--c-ink-800);
+  background-color: var(--color-warning-soft);
+  border-color: color-mix(in srgb, var(--color-warning) 30%, transparent);
+}
+
+.metaRow {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}
+
+.price {
+  font-weight: var(--fw-medium);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.was {
+  text-decoration: line-through;
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.count,
+.type {
+  font-size: var(--fs-xs);
+}
+
+.actions,
+.confirm {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-shrink: 0;
+}
+
+.confirmText {
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+}
+
+/* ---------- Publish switch ---------- */
+
+.switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  padding: var(--sp-1);
+}
+
+.switchInput {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.switchInput:disabled {
+  cursor: not-allowed;
+}
+
+.switchTrack {
+  position: relative;
+  display: block;
+  width: 36px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  background-color: var(--c-taupe-300);
+  transition: background-color var(--dur-normal) var(--ease-out);
+  pointer-events: none;
+}
+
+.switchThumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: var(--c-white);
+  box-shadow: var(--shadow-xs);
+  transition: transform var(--dur-normal) var(--ease-out);
+}
+
+.switchInput:checked + .switchTrack {
+  background-color: var(--color-accent);
+}
+
+.switchInput:checked + .switchTrack .switchThumb {
+  transform: translateX(16px);
+}
+
+.switchInput:focus-visible + .switchTrack {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switchTrack,
+  .switchThumb {
+    transition: none;
+  }
+}
+
+@media (max-width: 899px) {
+  .row {
+    flex-wrap: wrap;
+    padding: var(--sp-4);
+    gap: var(--sp-3);
+  }
+
+  .main {
+    flex-basis: calc(100% - 44px - var(--sp-3));
+  }
+
+  .actions,
+  .confirm {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .switch {
+    margin-right: auto;
+  }
+}

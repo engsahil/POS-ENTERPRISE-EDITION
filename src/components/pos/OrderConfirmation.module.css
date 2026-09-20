@@ -1,0 +1,130 @@
+.wrapper {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--sp-6) var(--sp-4);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 380px;
+  padding: var(--sp-6);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  animation: rise var(--dur-normal) var(--ease-out);
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: var(--color-success-soft);
+  color: var(--color-success);
+  margin-bottom: var(--sp-3);
+}
+
+.title {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+}
+
+.orderNumber {
+  margin-top: var(--sp-1);
+  font-size: var(--fs-md);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.time {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}
+
+.items {
+  list-style: none;
+  margin: var(--sp-5) 0 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+}
+
+.itemName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemTotal {
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.totals {
+  width: 100%;
+  margin: var(--sp-4) 0 var(--sp-5);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--color-border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.totalRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+}
+
+.totalRow dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.grandRow {
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    animation: none;
+  }
+}

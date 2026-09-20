@@ -1,0 +1,92 @@
+.wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: currentColor;
+  flex-shrink: 0;
+}
+
+.ok {
+  color: var(--color-success);
+  border-color: color-mix(in srgb, var(--color-success) 24%, transparent);
+  background-color: var(--color-success-soft);
+}
+
+.bad {
+  color: var(--color-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 24%, transparent);
+  background-color: var(--color-danger-soft);
+}
+
+.busy {
+  color: var(--c-ink-800);
+  border-color: color-mix(in srgb, var(--color-warning) 30%, transparent);
+  background-color: var(--color-warning-soft);
+}
+
+.busy .dot {
+  animation: pulse 1.2s var(--ease-in-out) infinite;
+}
+
+.idle {
+  color: var(--color-text-secondary);
+  background-color: var(--color-surface-sunken);
+}
+
+.detail {
+  color: inherit;
+  opacity: 0.85;
+  font-variant-numeric: tabular-nums;
+}
+
+.retry {
+  appearance: none;
+  border: 1px solid var(--color-border-strong);
+  background-color: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: var(--sp-1) var(--sp-3);
+  font-family: inherit;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.retry:hover {
+  background-color: var(--color-hover);
+}
+
+.retry:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Opacity-only, so the pulse is composited and cheap. */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .busy .dot { animation: none; }
+}

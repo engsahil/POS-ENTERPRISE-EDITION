@@ -1,0 +1,60 @@
+.shell {
+  display: flex;
+  height: 100%;
+  background-color: var(--color-bg);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+}
+
+.main:focus {
+  outline: none;
+}
+
+@media (max-width: 639px) {
+  .main {
+    padding-bottom: calc(var(--layout-tabbar-h) + var(--safe-bottom));
+  }
+}
+
+/* Sync indicator slot. Collapses entirely when the indicator renders null,
+   so a local-only install has no extra chrome. */
+.syncSlot:empty {
+  display: none;
+}
+
+.syncSlot {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--sp-2) var(--sp-5) 0;
+}
+
+.syncSlot:has(> :empty),
+.syncSlot:not(:has(*)) {
+  display: none;
+  padding: 0;
+}
+
+@media (max-width: 639px) {
+  .syncSlot {
+    padding: var(--sp-2) var(--sp-4) 0;
+  }
+}

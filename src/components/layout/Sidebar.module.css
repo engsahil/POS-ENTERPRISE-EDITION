@@ -1,0 +1,268 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: var(--layout-sidebar-w);
+  height: 100%;
+  background-color: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+  padding-left: var(--safe-left);
+  z-index: var(--z-nav);
+}
+
+/* ---------- Brand ---------- */
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-6) var(--sp-5) var(--sp-5);
+  flex-shrink: 0;
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  background-color: var(--color-primary);
+  color: var(--color-primary-contrast);
+}
+
+.brandText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.brandName {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text);
+}
+
+.brandMeta {
+  font-size: var(--fs-2xs);
+  color: var(--color-text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Navigation ---------- */
+
+.nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--sp-2) var(--sp-3);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  position: relative;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.link:hover {
+  background-color: var(--color-hover);
+  color: var(--color-text);
+}
+
+.linkActive,
+.linkActive:hover {
+  background-color: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+
+/* Active marker — a quiet bronze bar rather than a heavy fill */
+.linkActive::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  translate: 0 -50%;
+  width: 3px;
+  height: 18px;
+  border-radius: 0 var(--radius-full) var(--radius-full) 0;
+  background-color: var(--color-accent);
+  transform-origin: center;
+  animation: marker var(--dur-normal) var(--ease-out) both;
+}
+
+/*
+ * Composited: the marker is laid out at its final height and scaled in, so
+ * the animation runs on the compositor rather than triggering layout on
+ * every frame.
+ */
+@keyframes marker {
+  from {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+.linkIcon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.link:hover .linkIcon,
+.linkActive .linkIcon {
+  color: var(--color-text);
+}
+
+.linkText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.linkLabel {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--tracking-tight);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.linkDescription {
+  font-size: var(--fs-2xs);
+  color: var(--color-text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* ---------- Footer ---------- */
+
+.footer {
+  flex-shrink: 0;
+  padding: var(--sp-3);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.signOut {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-3);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  text-align: left;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.signOut:hover {
+  background-color: var(--color-hover);
+  color: var(--color-text);
+}
+
+.signOut:hover .linkIcon {
+  color: var(--color-text);
+}
+
+/* ---------- Tablet: icon rail ---------- */
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .sidebar {
+    width: var(--layout-rail-w);
+    align-items: center;
+  }
+
+  .brand {
+    padding: var(--sp-5) 0;
+    justify-content: center;
+  }
+
+  .brandText {
+    display: none;
+  }
+
+  .nav {
+    width: 100%;
+    padding: var(--sp-2);
+  }
+
+  .link {
+    flex-direction: column;
+    gap: var(--sp-2);
+    padding: var(--sp-3) var(--sp-1);
+  }
+
+  .linkText {
+    align-items: center;
+  }
+
+  .linkLabel {
+    font-size: var(--fs-2xs);
+    max-width: 100%;
+  }
+
+  .linkDescription {
+    display: none;
+  }
+
+  .linkActive::before {
+    height: 16px;
+  }
+
+  .footer {
+    width: 100%;
+    padding: var(--sp-2);
+  }
+
+  .signOut {
+    flex-direction: column;
+    gap: var(--sp-2);
+    padding: var(--sp-3) var(--sp-1);
+    align-items: center;
+    text-align: center;
+  }
+
+  .signOut .linkText {
+    align-items: center;
+  }
+
+  .signOut .linkDescription {
+    display: none;
+  }
+}
+
+/* ---------- Mobile: hidden (bottom tab bar takes over) ---------- */
+
+@media (max-width: 639px) {
+  .sidebar {
+    display: none;
+  }
+}

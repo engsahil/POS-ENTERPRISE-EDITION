@@ -1,0 +1,88 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+.label {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-secondary);
+}
+
+.field {
+  position: relative;
+  display: flex;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.field:hover {
+  border-color: var(--c-taupe-300);
+}
+
+.field:focus-within {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+
+.invalid {
+  border-color: var(--color-danger);
+}
+
+.invalid:focus-within {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 3px var(--color-danger-soft);
+}
+
+.textarea {
+  flex: 1;
+  min-width: 0;
+  padding: var(--sp-3);
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--fs-md);
+  line-height: var(--lh-snug);
+  color: var(--color-text);
+  border-radius: inherit;
+  resize: vertical;
+}
+
+/* The wrapper owns the focus ring; suppress the control's own outline in
+   every state so focus never renders a doubled border. */
+.textarea:focus,
+.textarea:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.textarea::placeholder {
+  color: var(--color-text-faint);
+}
+
+.textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.hint {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}
+
+@media (pointer: coarse) {
+  .textarea {
+    /* 16px avoids iOS zoom-on-focus */
+    font-size: 16px;
+  }
+}

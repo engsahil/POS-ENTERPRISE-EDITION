@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0"
+    />
+    <meta name="theme-color" content="#faf8f4" />
+    <meta name="description" content="Offline-first Point of Sale application" />
+    <meta name="application-name" content="POS" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="POS" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <title>POS</title>
+
+    <!--
+      Startup styles, inlined so they apply before any stylesheet loads.
+      Prevents a white flash between the OS splash screen and React mounting,
+      which is very visible in a standalone window.
+    -->
+    <style>
+      html {
+        background-color: #faf8f4;
+        color-scheme: light;
+      }
+      body {
+        margin: 0;
+        background-color: #faf8f4;
+      }
+      /* Removed as soon as the app renders. */
+      #app-boot {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        background-color: #faf8f4;
+      }
+      #app-boot span {
+        width: 28px;
+        height: 28px;
+        border: 2px solid #e6ded1;
+        border-top-color: #8a6a3e;
+        border-radius: 50%;
+        animation: boot-spin 0.7s linear infinite;
+      }
+      @keyframes boot-spin {
+        to { transform: rotate(360deg); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #app-boot span { animation: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <!-- Replaced by the application on first render. -->
+    <div id="app-boot" aria-hidden="true"><span></span></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

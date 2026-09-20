@@ -1,0 +1,187 @@
+/* ============================================================
+   Design tokens — single source of truth for the visual system.
+
+   Palette: white surfaces on warm beige/cream, with an espresso
+   ink for text and primary actions. Warm neutrals only — no cool
+   greys — so the interface reads as calm and premium.
+   ============================================================ */
+
+:root {
+  /* --- Neutral primitives (warm) --- */
+  --c-white: #ffffff;
+  --c-cream-50: #fdfcfa;
+  --c-cream-100: #faf8f4;
+  --c-cream-200: #f5f1ea;
+  --c-cream-300: #ece6db;
+  --c-sand-300: #e3dbcd;
+  --c-sand-400: #d5caba;
+  /* Taupes are tuned so muted/faint text clears WCAG AA (4.5:1)
+     on every surface in the palette, including cream-200. */
+  --c-taupe-300: #b3a795;
+  /* 400 and 500 are close by design: both must clear WCAG AA on cream and
+     accent-soft surfaces. The scale darkens monotonically. */
+  --c-taupe-400: #6f6558;
+  --c-taupe-500: #6b6154;
+  --c-taupe-600: #5d5449;
+  --c-ink-700: #4a423a;
+  --c-ink-800: #2c2621;
+  --c-ink-900: #1b1714;
+
+  /* --- Accent primitives --- */
+  --c-bronze-400: #c2a173;
+  --c-bronze-500: #a8814f;
+  --c-bronze-600: #8c6a3f;
+
+  /* --- Status primitives (desaturated to sit on cream) --- */
+  --c-green-500: #3f6b4a;
+  --c-green-100: #e7efe7;
+  --c-amber-500: #b5822e;
+  --c-amber-100: #f7eeda;
+  --c-red-500: #a84b3c;
+  --c-red-100: #f6e5e1;
+  --c-blue-500: #4a6b8a;
+  --c-blue-100: #e6edf3;
+
+  /* --- Semantic surfaces --- */
+  --color-bg: var(--c-cream-100);
+  --color-surface: var(--c-white);
+  --color-surface-alt: var(--c-cream-50);
+  --color-surface-sunken: var(--c-cream-200);
+  --color-surface-raised: var(--c-white);
+
+  --color-border: var(--c-cream-300);
+  --color-border-subtle: var(--c-cream-200);
+  --color-border-strong: var(--c-sand-300);
+
+  /* --- Semantic text --- */
+  --color-text: var(--c-ink-900);
+  --color-text-secondary: var(--c-ink-700);
+  --color-text-muted: var(--c-taupe-400);
+  --color-text-faint: var(--c-taupe-500);
+  --color-text-inverse: var(--c-cream-50);
+
+  /* --- Interactive --- */
+  --color-primary: var(--c-ink-900);
+  --color-primary-hover: var(--c-ink-800);
+  --color-primary-contrast: var(--c-cream-50);
+
+  --color-accent: var(--c-bronze-500);
+  --color-accent-hover: var(--c-bronze-600);
+  --color-accent-soft: #f3ead9;
+
+  --color-hover: var(--c-cream-200);
+  --color-active: var(--c-cream-300);
+  --color-selected: var(--c-white);
+
+  /* --- Status --- */
+  --color-success: var(--c-green-500);
+  --color-success-soft: var(--c-green-100);
+  --color-warning: var(--c-amber-500);
+  --color-warning-soft: var(--c-amber-100);
+  --color-danger: var(--c-red-500);
+  --color-danger-soft: var(--c-red-100);
+  --color-info: var(--c-blue-500);
+  --color-info-soft: var(--c-blue-100);
+
+  --color-focus-ring: var(--c-bronze-500);
+  --color-overlay: rgb(27 23 20 / 32%);
+
+  /* --- Typography --- */
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Inter',
+    'Helvetica Neue', Arial, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+  --fs-2xs: 0.6875rem;
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.8125rem;
+  --fs-md: 0.875rem;
+  --fs-lg: 1rem;
+  --fs-xl: 1.125rem;
+  --fs-2xl: 1.375rem;
+  --fs-3xl: 1.75rem;
+
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+
+  --lh-tight: 1.25;
+  --lh-snug: 1.4;
+  --lh-normal: 1.6;
+
+  --tracking-tight: -0.014em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.04em;
+  --tracking-caps: 0.08em;
+
+  /* --- Spacing (4px base) --- */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.25rem;
+  --sp-6: 1.5rem;
+  --sp-7: 1.75rem;
+  --sp-8: 2rem;
+  --sp-10: 2.5rem;
+  --sp-12: 3rem;
+  --sp-16: 4rem;
+  --sp-20: 5rem;
+
+  /* --- Radii --- */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* --- Elevation (warm-tinted, very restrained) --- */
+  --shadow-xs: 0 1px 2px rgb(27 23 20 / 4%);
+  --shadow-sm:
+    0 1px 2px rgb(27 23 20 / 5%), 0 1px 3px rgb(27 23 20 / 3%);
+  --shadow-md:
+    0 2px 4px rgb(27 23 20 / 4%), 0 4px 12px rgb(27 23 20 / 6%);
+  --shadow-lg:
+    0 4px 8px rgb(27 23 20 / 5%), 0 12px 32px rgb(27 23 20 / 9%);
+
+  /* --- Motion --- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-instant: 90ms;
+  --dur-fast: 150ms;
+  --dur-normal: 220ms;
+  --dur-slow: 320ms;
+
+  /* --- Layout --- */
+  --layout-sidebar-w: 244px;
+  --layout-rail-w: 80px;
+  --layout-tabbar-h: 62px;
+  --layout-content-max: 1360px;
+
+  /* --- Z-index --- */
+  --z-base: 0;
+  --z-sticky: 100;
+  --z-nav: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+
+  /* --- Safe areas --- */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+
+  /* --- Touch targets --- */
+  --tap-min: 44px;
+
+  color-scheme: light;
+}
+
+/* --- Breakpoint reference (kept consistent app-wide) ---
+   mobile:  < 640px
+   tablet:  640px – 1023px
+   desktop: >= 1024px
+--------------------------------------------------------- */

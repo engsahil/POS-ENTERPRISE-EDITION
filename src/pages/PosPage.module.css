@@ -1,0 +1,78 @@
+.loading {
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+  padding: var(--sp-4) 0;
+}
+
+/* Items scroll independently; the cart stays put beside them. */
+.layout {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: var(--sp-4);
+}
+
+.items {
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding-right: var(--sp-1);
+}
+
+.cart {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.cart > :last-child {
+  min-height: 0;
+  flex: 1;
+}
+
+.error {
+  font-size: var(--fs-sm);
+  color: var(--color-danger);
+  padding: var(--sp-3) var(--sp-4);
+  background-color: var(--color-danger-soft);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 24%, transparent);
+  border-radius: var(--radius-md);
+}
+
+/* Tablet: narrower cart column. */
+@media (max-width: 1099px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+}
+
+/* Mobile: stack, with the cart below the items. */
+@media (max-width: 819px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    overflow-y: auto;
+  }
+
+  .items {
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .cart {
+    position: sticky;
+    bottom: 0;
+  }
+}
+
+.sectionTitle {
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--color-text-faint);
+  margin: var(--sp-5) 0 var(--sp-3);
+}
