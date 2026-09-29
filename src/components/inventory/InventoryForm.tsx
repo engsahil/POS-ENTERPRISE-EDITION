@@ -56,6 +56,10 @@ export function InventoryForm({
     editing ? editing.record.isAvailable === 1 : true,
   );
 
+  // Set once the operator touches the link select themselves; after that
+  // the form never overrides their choice.
+  const [linkTouched, setLinkTouched] = useState(false);
+
   const [linkedElsewhere, setLinkedElsewhere] = useState<Set<string>>(
     new Set(),
   );
@@ -95,6 +99,28 @@ export function InventoryForm({
     (entry) =>
       !linkedElsewhere.has(entry.item.id) || entry.item.id === menuItemId,
   );
+
+  /*
+   * Suggest the menu item with the exact same name as the stock line, so
+   * "Cold Drink" in Inventory is linked to "Cold Drink" in the menu without
+   * the operator having to discover the select. The suggestion is stored as
+   * the real menuItemId (matching at sell time is always by ID, never by
+   * name) and only fills an empty, untouched select — a manual choice,
+   * including clearing the field, is never overridden.
+   */
+  useEffect(() => {
+    if (linkTouched || menuItemId) return;
+    const key = name.trim().toLowerCase();
+    if (!key) return;
+    const matches = availableMenuItems.filter(
+      (entry) => entry.item.name.trim().toLowerCase() === key,
+    );
+    const match = matches[0];
+    if (matches.length === 1 && match) setMenuItemId(match.item.id);
+    // availableMenuItems is derived from its sources; those are the real
+    // dependencies and re-running on derivation is intended.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name, menuItems, linkedElsewhere, menuItemId, linkTouched]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -243,7 +269,10 @@ export function InventoryForm({
               name="stockMenuItem"
               className={styles.select}
               value={menuItemId}
-              onChange={(e) => setMenuItemId(e.target.value)}
+              onChange={(e) => {
+                setLinkTouched(true);
+                setMenuItemId(e.target.value);
+              }}
             >
               <option value="">Not linked</option>
               {availableMenuItems.map((entry) => (
@@ -256,7 +285,7 @@ export function InventoryForm({
           <p className={styles.hint}>
             {menuItems.length === 0
               ? 'Add menu items first to link this stock line to one.'
-              : 'When linked and out of stock, the menu item is hidden from the POS.'}
+              : 'Selling the linked menu item in the POS reduces this stock automatically; at zero, the item is hidden from the POS.'}
           </p>
         </div>
 

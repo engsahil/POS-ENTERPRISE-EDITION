@@ -564,10 +564,12 @@ Order IDs are UUIDs; order **numbers** are a zero-padded per-installation
 sequence (`0001`, `0002`, ...) backed by a counter in `settings`, so they
 continue correctly across restarts.
 
-After the sale commits, linked stock is decremented by the quantity sold, and
-an item that reaches zero is marked out of stock and disappears from the POS.
-Stock bookkeeping runs *after* the money transaction: a stock problem must
-never roll back a payment already taken.
+Linked stock is decremented in the **same transaction** as the order, by the
+quantity sold — deal lines deduct their included products multiplied by the
+bundle quantity — so a completed sale can never skip its stock movement and a
+failed checkout can never perform one. Quantities are clamped at zero, so
+stock never goes negative and a stock write can never fail the payment; an
+item that reaches zero is marked out of stock and disappears from the POS.
 
 ### Offline
 
@@ -696,14 +698,18 @@ cannot be fulfilled is never offered.
 
 Deals appear in their own section above the individual items in the POS, and
 add to the cart as a single priced line. Deals are recorded on the order with
-a `dealId`; they do **not** adjust inventory in this phase.
+a `dealId`, and completing the order also decrements linked stock for their
+included products (contents × bundle quantity, aggregated by menu item) in
+the same transaction as everything else.
 
 ## Inventory management
 
 The **Inventory** section tracks stock. Lines are standalone, so anything can
 be tracked (flour, cups, gas cylinders), and each may **optionally be linked**
-to a menu item. Nothing is seeded: a fresh install has zero stock lines and
-shows "No inventory items yet".
+to a menu item. Entering a stock-line name that exactly matches a single menu
+item pre-selects that link for you — a manual choice is never overridden —
+and the field's hint explains what the link does. Nothing is seeded: a fresh
+install has zero stock lines and shows "No inventory items yet".
 
 ### Status
 

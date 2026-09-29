@@ -210,7 +210,7 @@ export function InventoryList({
                     }
                     disabled={busy}
                   >
-                    Out of stock
+                    Mark out
                   </Button>
                 )}
 

@@ -10,8 +10,9 @@
 
 import { STORES } from '@/config/storage.config';
 import { db } from '@/data/db/indexedDb';
+import { trackChange } from '@/data/repositories/changeTracker';
 import {
-  inventoryRepository,
+  dealsRepository,
   orderItemsRepository,
   ordersRepository,
   salesRepository,
@@ -20,6 +21,7 @@ import { getTaxConfig } from './restaurantService';
 import { settingsService, SETTING_KEYS } from './settingsService';
 import { syncQueueService } from './syncQueueService';
 import type {
+  InventoryRecord,
   OrderItemRecord,
   OrderRecord,
   OrderType,
@@ -176,6 +178,38 @@ export function calculateTotals(
     discountTotal,
     grandTotal: base.grandTotal - discountTotal,
   };
+}
+
+/**
+ * How many units of each menu item a sale removes from stock, keyed by
+ * menu item ID (never by display name).
+ *
+ * Direct cart lines contribute their quantity; a deal line contributes
+ * every contained product multiplied by the number of bundles. Quantities
+ * that are not finite and positive are ignored so a malformed record can
+ * never poison stock arithmetic.
+ */
+async function stockDeductions(lines: CartLine[]): Promise<Map<ID, number>> {
+  const deductions = new Map<ID, number>();
+  const add = (menuItemId: ID, quantity: number): void => {
+    if (!isFiniteNumber(quantity) || quantity <= 0) return;
+    deductions.set(menuItemId, (deductions.get(menuItemId) ?? 0) + quantity);
+  };
+
+  for (const line of lines) {
+    if (line.kind === 'item' && line.menuItemId) {
+      add(line.menuItemId, line.quantity);
+      continue;
+    }
+    if (line.kind === 'deal' && line.dealId) {
+      const deal = await dealsRepository.getById(line.dealId);
+      if (!deal || deal.deletedAt) continue;
+      for (const part of deal.items) {
+        add(part.menuItemId, part.quantity * line.quantity);
+      }
+    }
+  }
+  return deductions;
 }
 
 /**
@@ -343,14 +377,25 @@ export const orderService = {
       rev: 1,
     };
 
+    // Resolve stock movements before the transaction: direct lines plus
+    // the products inside any deal on the order.
+    const deductions = await stockDeductions(validated);
+    const stockWrites: InventoryRecord[] = [];
+
     await db.transaction(
-      [STORES.orders, STORES.orderItems, STORES.sales],
+      [
+        STORES.orders,
+        STORES.orderItems,
+        STORES.sales,
+        STORES.inventory,
+      ],
       'readwrite',
       async (stores) => {
         const orderStore = stores[STORES.orders];
         const itemStore = stores[STORES.orderItems];
         const saleStore = stores[STORES.sales];
-        if (!orderStore || !itemStore || !saleStore) {
+        const inventoryStore = stores[STORES.inventory];
+        if (!orderStore || !itemStore || !saleStore || !inventoryStore) {
           throw new Error('Order stores are unavailable.');
         }
 
@@ -359,6 +404,39 @@ export const orderService = {
           await db.request(itemStore.put(item));
         }
         await db.request(saleStore.put(sale));
+
+        /*
+         * Deduct stock in the SAME transaction as the order. That is what
+         * ties stock to the completed sale: a checkout that fails commits
+         * nothing (order and stock both unchanged), and because this runs
+         * only here — never on cart changes, receipt printing or sync
+         * replay — the same order cannot deduct twice.
+         *
+         * Stock is matched by the linked menuItemId (not by name) and is
+         * clamped at zero, so an over-sold line reads 0 rather than going
+         * negative. Lines with no linked stock record are simply skipped.
+         */
+        for (const [menuItemId, sold] of deductions) {
+          const matches = (await db.request(
+            inventoryStore.index('by_menuItemId').getAll(menuItemId),
+          )) as InventoryRecord[];
+          const record = matches.find((row) => !row.deletedAt);
+          if (!record || !isFiniteNumber(record.quantity)) continue;
+
+          const next = Math.max(
+            0,
+            Number((record.quantity - sold).toFixed(3)),
+          );
+          const updated: InventoryRecord = {
+            ...record,
+            quantity: next,
+            isOutOfStock: next <= 0 ? 1 : record.isOutOfStock,
+            updatedAt: nowISO(),
+            rev: (record.rev ?? 1) + 1,
+          };
+          await db.request(inventoryStore.put(updated));
+          stockWrites.push(updated);
+        }
       },
     );
 
@@ -370,6 +448,12 @@ export const orderService = {
         payload: { order, items, sale },
       });
 
+      // Stock movements ride the same outbox as every other inventory
+      // write, so a later sync sees the post-sale quantity exactly once.
+      for (const updated of stockWrites) {
+        await trackChange(STORES.inventory, updated.id, 'update', updated);
+      }
+
       void import('./sync/syncEngine').then(({ syncEngine }) => {
         void syncEngine.refresh();
       });
@@ -377,35 +461,7 @@ export const orderService = {
       /* the order is safely stored; sync can be reconciled later */
     }
 
-    await this.deductStock(validated);
-
     return { order, items, sale };
-  },
-
-  async deductStock(lines: CartLine[]): Promise<void> {
-    const soldByMenuItem = new Map<ID, number>();
-    for (const line of lines) {
-      if (line.kind !== 'item' || !line.menuItemId) continue;
-      soldByMenuItem.set(
-        line.menuItemId,
-        (soldByMenuItem.get(line.menuItemId) ?? 0) + line.quantity,
-      );
-    }
-
-    for (const [menuItemId, quantity] of soldByMenuItem) {
-      const matches = await inventoryRepository.findByIndex(
-        'by_menuItemId',
-        menuItemId,
-      );
-      const record = matches[0];
-      if (!record) continue;
-
-      const next = Math.max(0, Number((record.quantity - quantity).toFixed(3)));
-      await inventoryRepository.update(record.id, {
-        quantity: next,
-        isOutOfStock: next <= 0 ? 1 : record.isOutOfStock,
-      });
-    }
   },
 
   async getOrder(id: ID): Promise<OrderRecord | undefined> {
