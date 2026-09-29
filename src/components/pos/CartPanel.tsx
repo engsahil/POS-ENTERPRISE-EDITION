@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui';
+import { useEffect, useState } from 'react';
+import { Button, Input } from '@/components/ui';
 import { CloseIcon, MinusIcon, PlusIcon } from '@/components/ui/Icons';
 import { lineTotal, type CartLine, type CartTotals } from '@/services/orderService';
-import { formatMoney } from '@/utils/currency';
+import { formatMoney, parseMoney } from '@/utils/currency';
+import type { Paisa } from '@/types/common';
 import { useToppings } from '@/hooks/useToppings';
 import { useAddOns } from '@/hooks/useAddOns';
 import type { SelectedAddOn, SelectedTopping } from '@/types/domain';
@@ -16,7 +17,7 @@ export interface CartPanelProps {
   onDecrement: (key: string) => void;
   onRemove: (key: string) => void;
   onClear: () => void;
-  onComplete: () => void;
+  onComplete: (amountPaid: Paisa) => void;
   onUpdateToppings: (key: string, toppings: SelectedTopping[]) => void;
   onUpdateAddOns: (key: string, addOns: SelectedAddOn[]) => void;
 }
@@ -38,6 +39,31 @@ export function CartPanel({
   const { items: availableAddOns } = useAddOns(true);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [picker, setPicker] = useState<'toppings' | 'addons' | null>(null);
+
+  /*
+   * Customer paid amount. Empty means the customer pays the exact total,
+   * which keeps the common case one tap; a typed amount immediately drives
+   * the return calculation below.
+   */
+  const [paidText, setPaidText] = useState('');
+
+  useEffect(() => {
+    if (lines.length === 0) setPaidText('');
+  }, [lines.length]);
+
+  const total = totals.grandTotal;
+  const paid: Paisa =
+    paidText.trim() === '' ? total : (parseMoney(paidText) ?? total);
+  const shortfall: Paisa =
+    paidText.trim() === '' ? 0 : Math.max(0, total - paid);
+  const returnAmount: Paisa = Math.max(0, paid - total);
+
+  function handlePaidChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const next = event.target.value;
+    // Digits and at most one decimal point — same rule as PriceInput.
+    if (next !== '' && !/^\d*\.?\d{0,2}$/.test(next)) return;
+    setPaidText(next);
+  }
 
   function toggleExpand(key: string, type: 'toppings' | 'addons') {
     if (expanded === key && picker === type) {
@@ -228,6 +254,38 @@ export function CartPanel({
           </div>
         </dl>
 
+        {!empty ? (
+          <div className={styles.payment}>
+            <Input
+              label="Customer paid"
+              name="amountPaid"
+              value={paidText}
+              onChange={handlePaidChange}
+              placeholder={formatMoney(total)}
+              inputMode="decimal"
+              autoComplete="off"
+              disabled={completing}
+              invalid={shortfall > 0}
+              hint={
+                shortfall > 0 ? `Short by ${formatMoney(shortfall)}.` : undefined
+              }
+              fullWidth
+            />
+            <div className={styles.returnRow}>
+              <span className={styles.returnLabel}>Return / Change</span>
+              <span
+                className={
+                  returnAmount > 0
+                    ? `${styles.returnValue} ${styles.returnValueActive}`
+                    : styles.returnValue
+                }
+              >
+                {formatMoney(returnAmount)}
+              </span>
+            </div>
+          </div>
+        ) : null}
+
         <div className={styles.actions}>
           <Button
             variant="ghost"
@@ -237,8 +295,8 @@ export function CartPanel({
             Clear
           </Button>
           <Button
-            onClick={onComplete}
-            disabled={empty || completing}
+            onClick={() => onComplete(paid)}
+            disabled={empty || completing || shortfall > 0}
             fullWidth
           >
             {completing ? 'Completing' : 'Complete order'}

@@ -41,6 +41,31 @@
   color: var(--color-text-secondary);
 }
 
+/* Food sizes vs cold drink volumes — one quiet radio pair. */
+.kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-1);
+}
+
+.kind {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.kindInput {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
 .legendHint {
   font-size: var(--fs-xs);
   color: var(--color-text-muted);

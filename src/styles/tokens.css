@@ -1,9 +1,10 @@
 /* ============================================================
    Design tokens — single source of truth for the visual system.
-
    Palette: white surfaces on warm beige/cream, with an espresso
-   ink for text and primary actions. Warm neutrals only — no cool
-   greys — so the interface reads as calm and premium.
+   ink for text and a deep bronze for primary actions. Warm
+   neutrals only — no cool greys — so the interface reads as
+   calm and premium. Colour is reserved for primary actions,
+   selected states, status and small accents.
    ============================================================ */
 
 :root {
@@ -31,6 +32,7 @@
   --c-bronze-400: #c2a173;
   --c-bronze-500: #a8814f;
   --c-bronze-600: #8c6a3f;
+  --c-bronze-700: #755835;
 
   /* --- Status primitives (desaturated to sit on cream) --- */
   --c-green-500: #3f6b4a;
@@ -61,8 +63,13 @@
   --color-text-inverse: var(--c-cream-50);
 
   /* --- Interactive --- */
-  --color-primary: var(--c-ink-900);
-  --color-primary-hover: var(--c-ink-800);
+  /*
+   * Primary actions are deep bronze — the one clearly coloured element on
+   * an otherwise black/white/cream screen. Cream text on bronze-600 clears
+   * WCAG AA (4.9:1); bronze-700 is darker still for hover.
+   */
+  --color-primary: var(--c-bronze-600);
+  --color-primary-hover: var(--c-bronze-700);
   --color-primary-contrast: var(--c-cream-50);
 
   --color-accent: var(--c-bronze-500);

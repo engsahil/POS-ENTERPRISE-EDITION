@@ -16,7 +16,7 @@ import {
   type CartLine,
   type CartTotals,
 } from '@/services/orderService';
-import type { SizeLabel } from '@/services/menuService';
+import type { VariantLabel } from '@/services/menuService';
 import type { ID, Paisa } from '@/types/common';
 import type { SelectedAddOn, SelectedTopping } from '@/types/domain';
 
@@ -28,7 +28,7 @@ export interface UseCartResult {
     menuItemId: ID;
     itemPriceId: ID | null;
     name: string;
-    sizeLabel: SizeLabel;
+    sizeLabel: VariantLabel;
     unitPrice: Paisa;
   }) => void;
   addDeal: (input: { dealId: ID; name: string; unitPrice: Paisa }) => void;

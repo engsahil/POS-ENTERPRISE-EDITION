@@ -516,13 +516,19 @@ never mistaken for an empty day.
 
 ## POS billing
 
-The **POS** screen is the billing workflow. Every priced size is its own
-button, so selecting an item and its size and adding it to the cart is one tap.
-Adding the same item and size again stacks the line instead of duplicating it;
-a different size becomes its own line.
+The **POS** screen is the billing workflow. Every priced variant (size or
+drink volume) is its own button, so selecting an item and its variant and
+adding it to the cart is one tap. Adding the same item and variant again
+stacks the line instead of duplicating it; a different variant becomes its own
+line.
 
 The cart supports quantity steppers, per-line removal and Clear, and shows
-**Subtotal** and **Total** (plus a tax row when a rate is configured).
+**Subtotal** and **Total** (plus a tax row when a rate is configured). The
+footer captures the **Customer paid** amount and calculates **Return / Change**
+immediately as it is typed: an empty field means the customer pays the exact
+total, an overpayment shows the change due, and an underpayment blocks
+completion with a "Short by ..." hint until it is covered. The paid and return
+figures are stored on the order and shown on the confirmation and receipt.
 Completing an order writes it permanently and shows the order ID.
 
 ### Money
@@ -590,6 +596,14 @@ the job on a Letter sheet with the receipt stranded in a corner. The height is
 measured from the rendered receipt, so the roll is exactly as long as the
 content and no trailing blank page is fed.
 
+**Print Both:** the customer and kitchen receipts are cloned into one
+temporary container and go through this same pipeline — one valid `@page`
+sized to the combined content, with a dashed tear line between the two
+receipts and no forced page break. The previous implementation injected its
+own `size: <width> auto` rule (dropped by the browser, printing on Letter)
+plus a `page-break-after` spacer, which is what produced the double-print
+glitch: stretched receipts and an unexpected blank trailing section.
+
 ### ESC/POS
 
 `escpos.ts` lays text into the printer's fixed character grid: **32 columns at
@@ -616,7 +630,8 @@ toolbar; the chosen width is saved as the default for the next receipt.
 A receipt prints the restaurant name, logo, address, phone, email and receipt
 info (each omitted entirely when not configured), the order ID, date and time,
 every line with its size, quantity, unit price and amount, the subtotal, deal
-savings and tax where applicable, the total, and the configured footer.
+savings and tax where applicable, the total, the amount paid and the change
+due, and the configured footer.
 
 ### How the layout is kept from breaking
 
@@ -711,18 +726,21 @@ seeded: no default products, no demo items, no sample prices. A fresh install
 shows "No menu items yet".
 
 Each item supports a name, category, description, image, an availability
-toggle, and independent **Small / Medium / Large** prices. All three sizes are
-optional — leave a size blank and the item simply is not sold in it. Prices are
+toggle, and a variant selector: **Food sizes** (Small, Medium, Large, Extra
+Large, XL) or **Cold drink volume** (250 ml, 330 ml, 500 ml / Half Liter,
+1 Liter, 1.5 Liter) for beverages. Both sets use the same variant/price rows,
+so nothing about storage or sale flow differs. Every price is optional —
+leave a size or volume blank and the item simply is not sold in it. Prices are
 entered and displayed in Pakistani Rupees only, and stored as integer paisa so
 no floating-point drift is possible.
 
 ### Storage shape
 
-An item is one `menuItems` record plus up to three `itemPrices` rows keyed by
-size. Keeping prices in their own store means a later step can add sizes, cost
-prices or per-size stock without reshaping the item record. Deleting an item
-removes it and its price rows in a **single atomic transaction**, so orphaned
-prices cannot be left behind.
+An item is one `menuItems` record plus one `itemPrices` row per offered
+variant. Keeping prices in their own store means new labels, cost prices or
+per-size stock can be added without reshaping the item record. Deleting an
+item removes it and its price rows in a **single atomic transaction**, so
+orphaned prices cannot be left behind.
 
 ### Live updates to the POS
 

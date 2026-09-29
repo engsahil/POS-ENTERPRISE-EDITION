@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui';
 import { ImageIcon, TrashIcon } from '@/components/ui/Icons';
-import { SIZES, type MenuItemWithPrices } from '@/services/menuService';
+import {
+  VARIANT_LABELS,
+  sizeBadgeLabel,
+  type MenuItemWithPrices,
+} from '@/services/menuService';
 import { formatMoney } from '@/utils/currency';
 import styles from './MenuItemList.module.css';
 
@@ -109,9 +113,11 @@ export function MenuItemList({
 
                 {entry.availableSizes.length > 0 ? (
                   <span className={styles.prices}>
-                    {SIZES.filter((s) => entry.prices[s] !== null).map((s) => (
+                    {VARIANT_LABELS.filter((s) => entry.prices[s] !== null).map((s) => (
                       <span key={s} className={styles.price}>
-                        <span className={styles.priceSize}>{s.charAt(0)}</span>
+                        <span className={styles.priceSize}>
+                          {sizeBadgeLabel(s)}
+                        </span>
                         {formatMoney(entry.prices[s] as number)}
                       </span>
                     ))}

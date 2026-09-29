@@ -196,7 +196,8 @@
 }
 
 .switchInput:checked + .switchTrack {
-  background-color: var(--color-accent);
+  /* "Published" reads as a status indicator, not an accent. */
+  background-color: var(--color-success);
 }
 
 .switchInput:checked + .switchTrack .switchThumb {

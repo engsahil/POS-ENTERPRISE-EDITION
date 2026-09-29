@@ -19,7 +19,7 @@ import {
 import { getTaxConfig } from './restaurantService';
 import { settingsService, SETTING_KEYS } from './settingsService';
 import { syncQueueService } from './syncQueueService';
-import type { SizeLabel } from './menuService';
+import type { VariantLabel } from './menuService';
 import type {
   OrderItemRecord,
   OrderRecord,
@@ -54,7 +54,7 @@ export interface CartLine {
   dealId: ID | null;
   itemPriceId: ID | null;
   name: string;
-  sizeLabel: SizeLabel | null;
+  sizeLabel: VariantLabel | null;
   unitPrice: Paisa;
   quantity: number;
   toppings: SelectedTopping[];
@@ -73,7 +73,7 @@ export interface CartTotals {
 export const MAX_LINE_QUANTITY = 999;
 
 /** Stable key so the same item+size stacks instead of duplicating. */
-export function cartLineKey(menuItemId: ID, size: SizeLabel): string {
+export function cartLineKey(menuItemId: ID, size: VariantLabel): string {
   return `${menuItemId}::${size}`;
 }
 

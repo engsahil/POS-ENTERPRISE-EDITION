@@ -222,6 +222,37 @@
   font-weight: var(--fw-semibold);
 }
 
+/* ---------- Payment: customer paid + return amount ---------- */
+
+.payment {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+
+.returnRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  font-size: var(--fs-md);
+  color: var(--color-text);
+}
+
+.returnLabel {
+  font-weight: var(--fw-medium);
+}
+
+.returnValue {
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.returnValueActive {
+  color: var(--color-success);
+}
+
 .actions {
   display: flex;
   gap: var(--sp-2);

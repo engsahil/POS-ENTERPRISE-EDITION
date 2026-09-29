@@ -5,10 +5,12 @@ import { Button, Input, Textarea } from '@/components/ui';
 import {
   EMPTY_MENU_ITEM,
   menuService,
-  SIZES,
+  VARIANT_LABELS,
+  labelsForKind,
   type MenuItemInput,
   type MenuItemWithPrices,
-  type SizeLabel,
+  type VariantKind,
+  type VariantLabel,
 } from '@/services/menuService';
 import { CURRENCY } from '@/config/app.config';
 import type { Paisa } from '@/types/common';
@@ -25,13 +27,23 @@ export interface MenuItemFormProps {
 }
 
 function toInput(entry: MenuItemWithPrices): MenuItemInput {
+  const variantKind: VariantKind =
+    entry.item.variantKind === 'volume' ? 'volume' : 'size';
+  const prices = { ...entry.prices };
+  // Defensive: only the active kind's labels are ever carried into the form.
+  const offered = labelsForKind(variantKind);
+  for (const label of VARIANT_LABELS) {
+    if (!offered.includes(label)) prices[label] = null;
+  }
+
   return {
     name: entry.item.name,
     category: entry.item.category ?? '',
     description: entry.item.description ?? '',
     image: entry.item.image ?? null,
     isActive: entry.item.isActive === 1,
-    prices: { ...entry.prices },
+    variantKind,
+    prices,
   };
 }
 
@@ -62,8 +74,26 @@ export function MenuItemForm({ editing, onDone, onCancel }: MenuItemFormProps) {
     setErrors((prev) => ({ ...prev, [key === 'prices' ? 'prices' : 'name']: undefined }));
   }
 
-  function setPrice(size: SizeLabel, price: Paisa | null) {
+  function setPrice(size: VariantLabel, price: Paisa | null) {
     setValues((prev) => ({ ...prev, prices: { ...prev.prices, [size]: price } }));
+    setErrors((prev) => ({ ...prev, prices: undefined }));
+  }
+
+  /**
+   * Switch between food sizes and cold drink volumes. Prices belonging to
+   * the set being switched away from are cleared so an item never offers
+   * both at once — the same "leave empty = not sold in it" rule as before.
+   */
+  function setVariantKind(kind: VariantKind) {
+    setValues((prev) => {
+      if (prev.variantKind === kind) return prev;
+      const offered = labelsForKind(kind);
+      const prices = { ...prev.prices };
+      for (const label of VARIANT_LABELS) {
+        if (!offered.includes(label)) prices[label] = null;
+      }
+      return { ...prev, variantKind: kind, prices };
+    });
     setErrors((prev) => ({ ...prev, prices: undefined }));
   }
 
@@ -73,7 +103,7 @@ export function MenuItemForm({ editing, onDone, onCancel }: MenuItemFormProps) {
     const found: Errors = {};
     if (!values.name.trim()) found.name = 'Item name is required.';
 
-    const negative = SIZES.some((s) => {
+    const negative = VARIANT_LABELS.some((s) => {
       const v = values.prices[s];
       return v !== null && v < 0;
     });
@@ -156,16 +186,44 @@ export function MenuItemForm({ editing, onDone, onCancel }: MenuItemFormProps) {
           <legend className={styles.legend}>
             Prices ({CURRENCY.symbol})
           </legend>
+
+          <div className={styles.kinds} role="radiogroup" aria-label="Sold as">
+            <label className={styles.kind}>
+              <input
+                type="radio"
+                name="itemVariantKind"
+                className={styles.kindInput}
+                checked={values.variantKind === 'size'}
+                onChange={() => setVariantKind('size')}
+                disabled={saving}
+              />
+              <span>Food sizes</span>
+            </label>
+            <label className={styles.kind}>
+              <input
+                type="radio"
+                name="itemVariantKind"
+                className={styles.kindInput}
+                checked={values.variantKind === 'volume'}
+                onChange={() => setVariantKind('volume')}
+                disabled={saving}
+              />
+              <span>Cold drink volume</span>
+            </label>
+          </div>
+
           <p className={styles.legendHint}>
-            Leave a size empty if the item is not sold in that size.
+            {values.variantKind === 'volume'
+              ? 'For cold drinks and beverages. Leave a volume empty if the item is not sold in that volume.'
+              : 'Leave a size empty if the item is not sold in that size.'}
           </p>
 
           <div className={styles.prices}>
-            {SIZES.map((size) => (
+            {labelsForKind(values.variantKind).map((size) => (
               <PriceInput
                 key={size}
                 label={size}
-                name={`price${size}`}
+                name={`price-${size.replace(/[^a-z0-9]+/gi, '-')}`}
                 value={values.prices[size]}
                 onChange={(price) => setPrice(size, price)}
                 disabled={saving}

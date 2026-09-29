@@ -61,52 +61,61 @@ export function ReceiptView({ model, kitchenModel, actions }: ReceiptViewProps) 
 
   const currentRef = activeTab === 'customer' ? customerRef : kitchenRef;
 
+  /*
+   * Print both receipts in one job.
+   *
+   * The two on-screen receipts are cloned into a single temporary container
+   * and handed to the SAME printService pipeline a single receipt uses. That
+   * is the whole fix for the double-print glitch: the previous
+   * implementation built its own page style with `@page { size: <w> auto }`,
+   * which is invalid CSS — browsers drop the descriptor entirely and print
+   * on the default Letter/A4 sheet, stretching both receipts across it — and
+   * forced a page break after the first receipt, which then produced a blank
+   * trailing section. printService instead measures the real content height
+   * and injects two explicit lengths (`size: 80mm 210mm`), so the pair prints
+   * at the correct paper width with a tear line between them and no
+   * duplicated, missing or overlapping content.
+   */
   function printBoth() {
-    const container = document.createElement('div');
-    container.style.background = '#fff';
+    const customerClone = customerRef.current?.firstElementChild?.cloneNode(
+      true,
+    ) as HTMLElement | null;
+    const kitchenClone = kitchenRef.current?.firstElementChild?.cloneNode(
+      true,
+    ) as HTMLElement | null;
 
-    if (customerRef.current) {
-      const custClone = customerRef.current.firstElementChild?.cloneNode(true) as HTMLElement;
-      if (custClone) {
-        container.appendChild(custClone);
-        const spacer = document.createElement('div');
-        spacer.style.height = '10mm';
-        spacer.style.pageBreakAfter = 'always';
-        container.appendChild(spacer);
-      }
-    }
-    if (kitchenRef.current) {
-      const kitClone = kitchenRef.current.firstElementChild?.cloneNode(true) as HTMLElement;
-      if (kitClone) {
-        container.appendChild(kitClone);
-      }
-    }
-
-    if (!container.hasChildNodes()) {
-      // fallback: use current
+    // Nothing to clone (preview not mounted): print the visible receipt.
+    if (!customerClone && !kitchenClone) {
       printReceipt({ width: width as ReceiptWidth, container: currentRef.current });
       return;
     }
 
-    container.classList.add('print-root');
-    document.body.appendChild(container);
+    const container = document.createElement('div');
+    if (customerClone) container.appendChild(customerClone);
 
-    const style = document.createElement('style');
-    style.id = 'thermal-both';
-    style.media = 'print';
-    style.textContent = `@page { size: ${width} auto; margin: 0; }`;
-    document.head.appendChild(style);
+    // Tear line between the two receipts. The print stylesheet zeroes
+    // padding/margin/border on direct children of the print container, so
+    // the styled line sits one level in where those resets do not reach.
+    if (customerClone && kitchenClone) {
+      const cutWrap = document.createElement('div');
+      const cutLine = document.createElement('div');
+      cutLine.className = styles.cutLine ?? '';
+      cutWrap.appendChild(cutLine);
+      container.appendChild(cutWrap);
+    }
 
-    const restore = () => {
+    if (kitchenClone) container.appendChild(kitchenClone);
+
+    // The container is temporary — remove it once the job has finished so
+    // nothing is left behind in the document for the next print.
+    const cleanup = () => {
       container.remove();
-      style.remove();
-      window.removeEventListener('afterprint', restore);
+      window.removeEventListener('afterprint', cleanup);
     };
-    window.addEventListener('afterprint', restore);
-    window.print();
-    setTimeout(() => {
-      if (container.parentNode) restore();
-    }, 1000);
+    window.addEventListener('afterprint', cleanup);
+    window.setTimeout(cleanup, 2000);
+
+    printReceipt({ width: width as ReceiptWidth, container });
   }
 
   return (

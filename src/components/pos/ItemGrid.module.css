@@ -79,6 +79,8 @@
 .sizeButton {
   display: inline-flex;
   align-items: baseline;
+  flex-wrap: wrap;
+  min-width: 0;
   gap: var(--sp-2);
   padding: var(--sp-2) var(--sp-3);
   border: 1px solid var(--color-border-strong);

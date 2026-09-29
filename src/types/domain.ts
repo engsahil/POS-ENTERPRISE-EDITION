@@ -91,6 +91,13 @@ export interface RestaurantRecord extends BaseEntity {
 /* Menu items and their sizes/prices                                   */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Which variant set a menu item is priced in:
+ * - `size`   food sizes (Small / Medium / Large / Extra Large / XL)
+ * - `volume` cold drink volumes (250 ml, 500 ml / Half Liter, 1 Liter, ...)
+ */
+export type VariantKind = 'size' | 'volume';
+
 export interface MenuItemRecord extends BaseEntity {
   name: string;
   description: string;
@@ -105,13 +112,22 @@ export interface MenuItemRecord extends BaseEntity {
   isActive: 0 | 1;
   /** Whether stock is decremented when this item is sold. */
   tracksInventory: 0 | 1;
+  /**
+   * Variant label set the item is priced in. Optional because records
+   * created before this field existed simply read as 'size'.
+   */
+  variantKind?: VariantKind;
   sortOrder?: number;
 }
 
 /** A purchasable size/variant of a menu item, e.g. Small / Large. */
 export interface ItemPriceRecord extends BaseEntity {
   menuItemId: ID;
-  /** Size or variant label. */
+  /**
+   * Size or variant label. Free text so both food sizes ("Large",
+   * "Extra Large", "XL") and drink volumes ("250 ml", "1 Liter") live in
+   * the same rows; the label sets are defined in services/menuService.
+   */
   label: string;
   price: Paisa;
   /** Optional cost for margin reporting. */

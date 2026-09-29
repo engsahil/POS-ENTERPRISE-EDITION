@@ -95,6 +95,18 @@ export function OrderConfirmation({
             <dt>Total</dt>
             <dd>{formatMoney(order.grandTotal)}</dd>
           </div>
+          {order.amountPaid != null ? (
+            <>
+              <div className={styles.totalRow}>
+                <dt>Paid</dt>
+                <dd>{formatMoney(order.amountPaid)}</dd>
+              </div>
+              <div className={styles.totalRow}>
+                <dt>Return / Change</dt>
+                <dd>{formatMoney(order.changeDue ?? 0)}</dd>
+              </div>
+            </>
+          ) : null}
         </dl>
 
         <Button onClick={onNewOrder} fullWidth>

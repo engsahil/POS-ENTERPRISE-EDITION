@@ -1,24 +1,29 @@
 import { ImageIcon } from '@/components/ui/Icons';
-import { SIZES, type MenuItemWithPrices, type SizeLabel } from '@/services/menuService';
+import {
+  VARIANT_LABELS,
+  sizeBadgeLabel,
+  type MenuItemWithPrices,
+  type VariantLabel,
+} from '@/services/menuService';
 import { formatMoney } from '@/utils/currency';
 import styles from './ItemGrid.module.css';
 
 export interface ItemGridProps {
   items: MenuItemWithPrices[];
-  onSelect: (entry: MenuItemWithPrices, size: SizeLabel) => void;
+  onSelect: (entry: MenuItemWithPrices, size: VariantLabel) => void;
 }
 
 /**
  * Sellable items.
  *
- * Each priced size is its own button, so choosing a size and adding to the
- * cart is a single tap — the fastest path for a cashier.
+ * Each priced variant is its own button, so choosing a size or volume and
+ * adding to the cart is a single tap — the fastest path for a cashier.
  */
 export function ItemGrid({ items, onSelect }: ItemGridProps) {
   return (
     <ul className={styles.grid}>
       {items.map((entry) => {
-        const sizes = SIZES.filter((s) => entry.prices[s] !== null);
+        const sizes = VARIANT_LABELS.filter((s) => entry.prices[s] !== null);
 
         return (
           <li key={entry.item.id} className={styles.tile}>
@@ -55,7 +60,7 @@ export function ItemGrid({ items, onSelect }: ItemGridProps) {
                       )}`}
                     >
                       <span className={styles.sizeLabel}>
-                        {size.charAt(0)}
+                        {sizeBadgeLabel(size)}
                       </span>
                       <span className={styles.sizePrice}>
                         {formatMoney(entry.prices[size] as number)}

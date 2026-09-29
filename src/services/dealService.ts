@@ -9,7 +9,7 @@
  */
 
 import { dealsRepository } from '@/data/repositories';
-import { menuService, type MenuItemWithPrices, type SizeLabel } from './menuService';
+import { menuService, type MenuItemWithPrices, type VariantLabel } from './menuService';
 import type { DealLine, DealPricingType, DealRecord, StoredImage } from '@/types/domain';
 import type { ID, Paisa } from '@/types/common';
 
@@ -73,7 +73,7 @@ export function priceDeal(
 ): DealView {
   const items: DealItemView[] = record.items.map((line) => {
     const entry = menu.get(line.menuItemId);
-    const size = line.sizeLabel as SizeLabel;
+    const size = line.sizeLabel as VariantLabel;
     const unitPrice =
       entry && size && entry.prices[size] !== undefined
         ? entry.prices[size]

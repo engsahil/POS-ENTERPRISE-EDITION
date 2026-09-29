@@ -1,10 +1,14 @@
 /**
  * Menu management.
  *
- * A menu item is stored as one `menuItems` record plus up to three
- * `itemPrices` rows (Small / Medium / Large). Prices live in their own store
- * so a future step can add sizes, cost prices or per-size stock without
- * reshaping the item record.
+ * A menu item is stored as one `menuItems` record plus one `itemPrices` row
+ * per offered variant. Food items are priced in the standard sizes
+ * (Small / Medium / Large / Extra Large / XL); cold drinks are priced in
+ * volume labels (250 ml, 330 ml, 500 ml / Half Liter, 1 Liter, 1.5 Liter).
+ * Both sets use the same variant/price rows, so nothing about the storage
+ * or sale flow changes — only which labels an item offers. Prices live in
+ * their own store so cost prices or per-size stock can be added later
+ * without reshaping the item record.
  *
  * Nothing is ever seeded: no default products, no demo items, no sample
  * prices. An unconfigured terminal has zero menu items.
@@ -13,21 +17,75 @@
 import { db } from '@/data/db/indexedDb';
 import { STORES } from '@/config/storage.config';
 import { menuItemsRepository, itemPricesRepository } from '@/data/repositories';
-import type { ItemPriceRecord, MenuItemRecord, StoredImage } from '@/types/domain';
+import type {
+  ItemPriceRecord,
+  MenuItemRecord,
+  StoredImage,
+  VariantKind,
+} from '@/types/domain';
 import type { ID, Paisa } from '@/types/common';
 import { sanitisePrice, sanitiseText } from '@/utils/validate';
 
-/** The three sizes, in display order. */
-export const SIZES = ['Small', 'Medium', 'Large'] as const;
+export type { VariantKind };
+
+/** Food sizes, in display order. */
+export const SIZES = ['Small', 'Medium', 'Large', 'Extra Large', 'XL'] as const;
 export type SizeLabel = (typeof SIZES)[number];
 
-/** Prices keyed by size. `null` means "not offered in this size". */
-export type SizePrices = Record<SizeLabel, Paisa | null>;
+/** Volume options for cold drinks / beverages, in display order. */
+export const VOLUME_SIZES = [
+  '250 ml',
+  '330 ml',
+  '500 ml / Half Liter',
+  '1 Liter',
+  '1.5 Liter',
+] as const;
+export type VolumeLabel = (typeof VOLUME_SIZES)[number];
+
+/** Any selectable variant label. */
+export type VariantLabel = SizeLabel | VolumeLabel;
+
+/** Every known label, food sizes first — the canonical display order. */
+export const VARIANT_LABELS: readonly VariantLabel[] = [...SIZES, ...VOLUME_SIZES];
+
+/** The label set an item of the given kind offers. */
+export function labelsForKind(kind: VariantKind): readonly VariantLabel[] {
+  return kind === 'volume' ? VOLUME_SIZES : SIZES;
+}
+
+/**
+ * Compact badge for a label where space is tight (POS tiles, list rows).
+ * The classic single letters stay single letters; longer labels — Extra
+ * Large, XL and the volume options — are shown in full so they are never
+ * confused with each other.
+ */
+export function sizeBadgeLabel(label: VariantLabel): string {
+  switch (label) {
+    case 'Small':
+      return 'S';
+    case 'Medium':
+      return 'M';
+    case 'Large':
+      return 'L';
+    default:
+      return label;
+  }
+}
+
+/** Prices keyed by variant label. `null` means "not offered in this label". */
+export type SizePrices = Record<VariantLabel, Paisa | null>;
 
 export const EMPTY_SIZE_PRICES: SizePrices = {
   Small: null,
   Medium: null,
   Large: null,
+  'Extra Large': null,
+  XL: null,
+  '250 ml': null,
+  '330 ml': null,
+  '500 ml / Half Liter': null,
+  '1 Liter': null,
+  '1.5 Liter': null,
 };
 
 /** A menu item joined with its size prices — what the UI and POS consume. */
@@ -36,8 +94,8 @@ export interface MenuItemWithPrices {
   prices: SizePrices;
   /** Lowest priced size, or null when the item has no prices yet. */
   fromPrice: Paisa | null;
-  /** Sizes that actually have a price, in display order. */
-  availableSizes: SizeLabel[];
+  /** Variant labels that actually have a price, in display order. */
+  availableSizes: VariantLabel[];
 }
 
 export interface MenuItemInput {
@@ -46,6 +104,8 @@ export interface MenuItemInput {
   description: string;
   image: StoredImage | null;
   isActive: boolean;
+  /** Which label set the item is priced in: food sizes or drink volumes. */
+  variantKind: VariantKind;
   prices: SizePrices;
 }
 
@@ -56,28 +116,45 @@ export const EMPTY_MENU_ITEM: MenuItemInput = {
   description: '',
   image: null,
   isActive: true,
+  variantKind: 'size',
   prices: { ...EMPTY_SIZE_PRICES },
 };
+
+/**
+ * Prices for labels outside the item's active kind are forced to null, so
+ * an item can never end up offering both food sizes and volumes at once.
+ */
+function pricesForKind(kind: VariantKind, prices: SizePrices): SizePrices {
+  const result: SizePrices = { ...EMPTY_SIZE_PRICES, ...prices };
+  const offered = labelsForKind(kind);
+  for (const label of VARIANT_LABELS) {
+    if (!offered.includes(label)) result[label] = null;
+  }
+  return result;
+}
 
 function summarise(
   item: MenuItemRecord,
   priceRows: ItemPriceRecord[],
 ): MenuItemWithPrices {
+  const kind: VariantKind = item.variantKind === 'volume' ? 'volume' : 'size';
   const prices: SizePrices = { ...EMPTY_SIZE_PRICES };
 
   for (const row of priceRows) {
     if (row.deletedAt) continue;
-    if ((SIZES as readonly string[]).includes(row.label)) {
-      prices[row.label as SizeLabel] = row.price;
+    if ((VARIANT_LABELS as readonly string[]).includes(row.label)) {
+      prices[row.label as VariantLabel] = row.price;
     }
   }
 
-  const availableSizes = SIZES.filter((s) => prices[s] !== null);
-  const values = availableSizes.map((s) => prices[s] as Paisa);
+  // Only the active kind's labels are ever offered for sale.
+  const normalised = pricesForKind(kind, prices);
+  const availableSizes = VARIANT_LABELS.filter((s) => normalised[s] !== null);
+  const values = availableSizes.map((s) => normalised[s] as Paisa);
 
   return {
     item,
-    prices,
+    prices: normalised,
     fromPrice: values.length ? Math.min(...values) : null,
     availableSizes,
   };
@@ -144,22 +221,32 @@ export const menuService = {
       image: input.image,
       isActive: input.isActive ? 1 : 0,
       tracksInventory: 0,
+      variantKind: input.variantKind === 'volume' ? 'volume' : 'size',
     });
 
-    await this.replacePrices(item.id, input.prices);
+    await this.replacePrices(
+      item.id,
+      pricesForKind(
+        input.variantKind === 'volume' ? 'volume' : 'size',
+        input.prices,
+      ),
+    );
     return (await this.getById(item.id)) as MenuItemWithPrices;
   },
 
   async update(id: ID, input: MenuItemInput): Promise<MenuItemWithPrices> {
+    const variantKind: VariantKind =
+      input.variantKind === 'volume' ? 'volume' : 'size';
     await menuItemsRepository.update(id, {
       name: sanitiseText(input.name, 120),
       category: sanitiseText(input.category, 60),
       description: sanitiseText(input.description, 500),
       image: input.image,
       isActive: input.isActive ? 1 : 0,
+      variantKind,
     });
 
-    await this.replacePrices(id, input.prices);
+    await this.replacePrices(id, pricesForKind(variantKind, input.prices));
     return (await this.getById(id)) as MenuItemWithPrices;
   },
 
@@ -199,7 +286,9 @@ export const menuService = {
 
   /**
    * Make the stored price rows match `prices` exactly: update existing rows,
-   * create missing ones, and hard-delete sizes that no longer have a price.
+   * create missing ones, and hard-delete labels that no longer have a price.
+   * Every known label is considered, so clearing a size or switching an
+   * item's kind removes the now-unused rows rather than orphaning them.
    */
   async replacePrices(menuItemId: ID, prices: SizePrices): Promise<void> {
     const existing = await itemPricesRepository.findByIndex(
@@ -209,7 +298,7 @@ export const menuService = {
     );
     const bySize = new Map(existing.map((row) => [row.label, row]));
 
-    for (const size of SIZES) {
+    for (const size of VARIANT_LABELS) {
       // sanitisePrice turns NaN/Infinity/negative into null (= not offered),
       // so an invalid price can never be stored or later summed.
       const value = sanitisePrice(prices[size]);
@@ -224,7 +313,7 @@ export const menuService = {
         await itemPricesRepository.update(row.id, {
           price: value,
           deletedAt: null,
-          sortOrder: SIZES.indexOf(size),
+          sortOrder: VARIANT_LABELS.indexOf(size),
         } as Partial<ItemPriceRecord>);
       } else {
         await itemPricesRepository.create({
@@ -232,7 +321,7 @@ export const menuService = {
           label: size,
           price: value,
           isDefault: 0,
-          sortOrder: SIZES.indexOf(size),
+          sortOrder: VARIANT_LABELS.indexOf(size),
         });
       }
     }

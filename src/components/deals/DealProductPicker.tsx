@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui';
 import { PlusIcon, TrashIcon } from '@/components/ui/Icons';
-import { SIZES, type MenuItemWithPrices } from '@/services/menuService';
+import {
+  VARIANT_LABELS,
+  type MenuItemWithPrices,
+  type VariantLabel,
+} from '@/services/menuService';
 import type { DealLine } from '@/types/domain';
 import { formatMoney } from '@/utils/currency';
 import styles from './DealProductPicker.module.css';
@@ -13,9 +17,9 @@ export interface DealProductPickerProps {
   disabled?: boolean;
 }
 
-/** Sizes that actually carry a price for a given item. */
+/** Variant labels that actually carry a price for a given item. */
 function pricedSizes(entry: MenuItemWithPrices) {
-  return SIZES.filter((s) => entry.prices[s] !== null);
+  return VARIANT_LABELS.filter((s) => entry.prices[s] !== null);
 }
 
 export function DealProductPicker({
@@ -80,7 +84,7 @@ export function DealProductPicker({
           {value.map((line, index) => {
             const entry = menuItems.find((e) => e.item.id === line.menuItemId);
             const unit = entry
-              ? (entry.prices[line.sizeLabel as (typeof SIZES)[number]] ?? null)
+              ? (entry.prices[line.sizeLabel as VariantLabel] ?? null)
               : null;
 
             return (
