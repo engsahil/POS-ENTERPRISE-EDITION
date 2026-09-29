@@ -40,13 +40,36 @@ export interface DayPoint {
   isToday: boolean;
 }
 
+/** Money received per payment method, in paisa. */
+export interface PaymentMethodTotals {
+  cash: Paisa;
+  card: Paisa;
+  digital: Paisa;
+  other: Paisa;
+}
+
+/**
+ * Cash-flow figures derived from completed, non-cancelled sales — the
+ * actual payable amount per method (post-discount), never an estimate.
+ */
+export interface PaymentFlow {
+  today: PaymentMethodTotals;
+  week: PaymentMethodTotals;
+  all: PaymentMethodTotals;
+}
+
 export interface SalesOverview {
   today: PeriodSummary;
   week: PeriodSummary;
   month: PeriodSummary;
   /** Current calendar week, Monday to Sunday, for the daily chart. */
   weekDays: DayPoint[];
-  /** Most recent sales, newest first. */
+  /** Received money per payment method over three windows. */
+  paymentFlow: PaymentFlow;
+  /**
+   * Most recent sales, newest first — includes cancelled rows so history
+   * keeps its audit trail (flagged, never counted in any total).
+   */
   recent: SaleRecord[];
   /** True when no sale has ever been recorded. */
   isEmpty: boolean;
@@ -83,16 +106,43 @@ function addDays(date: Date, days: number): Date {
 }
 
 /**
- * A sale counts towards analytics unless it was refunded.
+ * A sale counts towards analytics and cash flow only while it is a real,
+ * completed sale: cancelled and refunded rows are excluded from every
+ * figure but kept in the record itself for the audit trail.
  * Soft-deleted records are already excluded by the repository.
  */
-function isCountable(sale: SaleRecord): boolean {
-  return !sale.refundedAt;
+export function isCountable(sale: SaleRecord): boolean {
+  return !sale.refundedAt && !sale.cancelledAt;
 }
 
 /** Treat a non-finite stored value as zero rather than poisoning the sum. */
 function safeNumber(value: unknown): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
+function emptyFlow(): PaymentMethodTotals {
+  return { cash: 0, card: 0, digital: 0, other: 0 };
+}
+
+/** Route a sale's amount into the right per-method bucket. */
+function addToFlow(
+  flow: PaymentMethodTotals,
+  method: SaleRecord['paymentMethod'],
+  amount: number,
+): void {
+  switch (method) {
+    case 'cash':
+      flow.cash += amount;
+      break;
+    case 'card':
+      flow.card += amount;
+      break;
+    case 'digital':
+      flow.digital += amount;
+      break;
+    default:
+      flow.other += amount;
+  }
 }
 
 function summarise(
@@ -146,11 +196,15 @@ export const salesService = {
    * current week. `now` is injectable so the calculation is testable.
    */
   async overview(now: Date = new Date()): Promise<SalesOverview> {
-    const sales = await this.allSales();
+    const all = await salesRepository.list();
+    // Totals use only countable sales; `all` (including cancelled) feeds
+    // the history list so a cancelled order stays visible but flagged.
+    const sales = all.filter(isCountable);
 
     const todayKey = dateKey(now);
     const weekStart = startOfWeek(now);
     const monthStart = startOfMonth(now);
+    const weekKey = dateKey(weekStart);
 
     const today = summarise('today', 'Today', sales, todayKey, todayKey);
     const week = summarise(
@@ -184,7 +238,25 @@ export const salesService = {
       });
     }
 
-    const recent = [...sales]
+    // Cash flow: actual post-discount amounts per payment method, from
+    // completed sales only (cancelled/refunded rows never contribute).
+    const paymentFlow: PaymentFlow = {
+      today: emptyFlow(),
+      week: emptyFlow(),
+      all: emptyFlow(),
+    };
+    for (const sale of sales) {
+      const amount = safeNumber(sale.grandTotal);
+      addToFlow(paymentFlow.all, sale.paymentMethod, amount);
+      if (sale.businessDate === todayKey) {
+        addToFlow(paymentFlow.today, sale.paymentMethod, amount);
+      }
+      if (sale.businessDate >= weekKey) {
+        addToFlow(paymentFlow.week, sale.paymentMethod, amount);
+      }
+    }
+
+    const recent = [...all]
       .sort((a, b) => b.completedAt.localeCompare(a.completedAt))
       .slice(0, 10);
 
@@ -193,8 +265,9 @@ export const salesService = {
       week,
       month,
       weekDays,
+      paymentFlow,
       recent,
-      isEmpty: sales.length === 0,
+      isEmpty: all.length === 0,
     };
   },
 };

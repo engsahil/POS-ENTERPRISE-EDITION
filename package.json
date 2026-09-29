@@ -1,7 +1,7 @@
 {
   "name": "pos-app",
   "private": true,
-  "version": "1.1.0",
+  "version": "2.1.5",
   "type": "module",
   "description": "Offline-first Point of Sale application",
   "scripts": {

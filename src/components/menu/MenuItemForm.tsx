@@ -17,7 +17,7 @@ import type { Paisa } from '@/types/common';
 import { ITEM_IMAGE_MAX_EDGE } from '@/utils/image';
 import styles from './MenuItemForm.module.css';
 
-type Errors = { name?: string; prices?: string };
+type Errors = { name?: string; prices?: string; discount?: string };
 
 export interface MenuItemFormProps {
   /** Existing item to edit, or undefined to add a new one. */
@@ -119,6 +119,13 @@ export function MenuItemForm({ editing, onDone, onCancel }: MenuItemFormProps) {
     EMPTY_VOLUME_DRAFT,
   );
   const [volumeError, setVolumeError] = useState<string | null>(null);
+  // Kept as text so partial input like "12." stays editable while typing.
+  const [discountText, setDiscountText] = useState(
+    () =>
+      editing?.item.discountPercent != null
+        ? String(editing.item.discountPercent)
+        : '',
+  );
   const [errors, setErrors] = useState<Errors>({});
   const [saving, setSaving] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
@@ -202,13 +209,26 @@ export function MenuItemForm({ editing, onDone, onCancel }: MenuItemFormProps) {
     );
     if (negative) found.prices = 'Prices cannot be negative.';
 
+    // Item-level discount: empty means none; anything entered must be a
+    // percentage between 0 and 100.
+    let discountPercent: number | null = null;
+    const discountRaw = discountText.trim();
+    if (discountRaw) {
+      const parsed = Number(discountRaw);
+      if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
+        found.discount = 'Enter a percentage between 0 and 100.';
+      } else {
+        discountPercent = parsed === 0 ? null : Math.round(parsed * 100) / 100;
+      }
+    }
+
     setErrors(found);
     if (Object.keys(found).length > 0) return;
 
     setSaving(true);
     setFailure(null);
     try {
-      const payload: MenuItemInput = { ...values, prices };
+      const payload: MenuItemInput = { ...values, prices, discountPercent };
       if (editing) {
         await menuService.update(editing.item.id, payload);
       } else {
@@ -253,6 +273,26 @@ export function MenuItemForm({ editing, onDone, onCancel }: MenuItemFormProps) {
               <option key={c} value={c} />
             ))}
           </datalist>
+
+          <Input
+            label="Discount (%)"
+            name="itemDiscount"
+            value={discountText}
+            onChange={(e) => {
+              setDiscountText(e.target.value);
+              setErrors((prev) => ({ ...prev, discount: undefined }));
+            }}
+            inputMode="decimal"
+            autoComplete="off"
+            placeholder="None"
+            hint={
+              errors.discount ??
+              'Applies to this item only at checkout. Leave empty for no discount.'
+            }
+            invalid={Boolean(errors.discount)}
+            disabled={saving}
+            fullWidth
+          />
 
           <Textarea
             label="Description"

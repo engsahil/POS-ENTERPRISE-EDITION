@@ -103,6 +103,11 @@ export function MenuItemList({
                 {disabled ? (
                   <span className={styles.badge}>Disabled</span>
                 ) : null}
+                {item.discountPercent ? (
+                  <span className={styles.badge}>
+                    {item.discountPercent}% off
+                  </span>
+                ) : null}
               </div>
 
               <div className={styles.metaRow}>

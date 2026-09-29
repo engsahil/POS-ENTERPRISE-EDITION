@@ -18,6 +18,7 @@ import {
   salesRepository,
 } from '@/data/repositories';
 import { getTaxConfig } from './restaurantService';
+import { customerService } from './customerService';
 import { settingsService, SETTING_KEYS } from './settingsService';
 import { syncQueueService } from './syncQueueService';
 import type {
@@ -60,11 +61,20 @@ export interface CartLine {
   quantity: number;
   toppings: SelectedTopping[];
   addOns: SelectedAddOn[];
+  /**
+   * Item-level discount percentage carried from the menu item (0–100).
+   * Null/absent means this line has no discount. Deal lines never have one:
+   * the deal's own pricing is the discount.
+   */
+  discountPercent?: number | null;
 }
 
 export interface CartTotals {
+  /** Sum of line gross totals, before any discount. */
   subtotal: Paisa;
-  /** Order-level discount, clamped so it can never exceed the subtotal. */
+  /** Sum of the item-level (menu item percentage) discounts. */
+  itemDiscountTotal: Paisa;
+  /** Item discounts plus the order-level discount, each clamped. */
   discountTotal: Paisa;
   taxTotal: Paisa;
   grandTotal: Paisa;
@@ -105,15 +115,31 @@ export function lineTotal(line: CartLine): Paisa {
 }
 
 /**
+ * Paisa amount the line saves through its menu item's discount percentage.
+ * Zero for deal lines and for items without a configured discount, so an
+ * undiscounted item never shows discount information anywhere.
+ */
+export function lineDiscount(line: CartLine): Paisa {
+  const pct = line.discountPercent;
+  if (!isFiniteNumber(pct) || pct <= 0) return 0;
+  const gross = lineTotal(line);
+  if (gross <= 0) return 0;
+  const applied = Math.min(100, pct);
+  return Math.min(gross, Math.round((gross * applied) / 100));
+}
+
+/**
  * Compute totals for a cart.
  *
  * Exclusive tax is added on top of the subtotal. Inclusive tax is extracted
  * from it, so the grand total still equals the sum of the displayed prices.
  * Rounding happens once, at the tax figure, to avoid per-line drift.
  *
- * An optional order-level `discount` is subtracted from the payable total.
- * It is clamped to the displayed subtotal, so the grand total can never go
- * negative and a discount of zero totals exactly as it did before.
+ * Discounts come from two places and are simply added together:
+ * - item-level percentages from each menu item (never global), and
+ * - an optional order-level `discount` typed at checkout.
+ * Each is clamped so the grand total can never go negative, and a cart with
+ * no discounts totals exactly as it did before discounts existed.
  */
 export function calculateTotals(
   lines: CartLine[],
@@ -127,6 +153,10 @@ export function calculateTotals(
   };
 
   const gross = lines.reduce((sum, line) => sum + safeLineTotal(line), 0);
+  const itemDiscountTotal = lines.reduce(
+    (sum, line) => sum + lineDiscount(line),
+    0,
+  );
   const itemCount = lines.reduce(
     (sum, line) =>
       sum + (isFiniteNumber(line.quantity) ? Math.max(0, Math.floor(line.quantity)) : 0),
@@ -136,7 +166,7 @@ export function calculateTotals(
     ? Math.min(100, Math.max(0, taxPercent))
     : 0;
 
-  let base: Omit<CartTotals, 'discountTotal'>;
+  let base: Omit<CartTotals, 'itemDiscountTotal' | 'discountTotal'>;
   if (rate === 0) {
     base = {
       subtotal: gross,
@@ -168,15 +198,19 @@ export function calculateTotals(
     };
   }
 
-  // Invalid, negative or oversized discounts are clamped rather than trusted.
-  const discountTotal = isFiniteNumber(discount)
-    ? Math.min(Math.max(0, Math.round(discount)), base.subtotal)
+  // The order-level discount may not push the payable total below zero and
+  // may not overlap the item-level discounts already applied.
+  const checkoutRoom = Math.max(0, base.subtotal - itemDiscountTotal);
+  const checkoutDiscount = isFiniteNumber(discount)
+    ? Math.min(Math.max(0, Math.round(discount)), checkoutRoom)
     : 0;
+  const discountTotal = itemDiscountTotal + checkoutDiscount;
 
   return {
     ...base,
+    itemDiscountTotal,
     discountTotal,
-    grandTotal: base.grandTotal - discountTotal,
+    grandTotal: Math.max(0, base.grandTotal - discountTotal),
   };
 }
 
@@ -309,6 +343,13 @@ export const orderService = {
     const customerPhone = input.customerPhone?.trim() ? input.customerPhone.trim().slice(0, 30) : undefined;
     const note = input.note?.trim() ? input.note.trim().slice(0, 300) : undefined;
 
+    // Reuse the customer's existing record (matched by phone, then exact
+    // name) or create one — checkout itself stays a single step.
+    const customer = await customerService.upsertFromCheckout({
+      name: customerName,
+      phone: customerPhone,
+    });
+
     const order: OrderRecord = {
       id: orderId,
       orderNumber,
@@ -324,6 +365,7 @@ export const orderService = {
       tableLabel,
       customerName,
       customerPhone,
+      customerId: customer?.id ?? null,
       note,
       completedAt: timestamp,
       createdAt: timestamp,
@@ -345,8 +387,9 @@ export const orderService = {
         sizeLabel: line.sizeLabel ?? undefined,
         unitPrice: line.unitPrice,
         quantity: line.quantity,
-        discount: 0,
-        lineTotal: lineTotal(line),
+        // Item-level discount only (order-level lives on the header).
+        discount: lineDiscount(line),
+        lineTotal: lineTotal(line) - lineDiscount(line),
         toppings: line.toppings.length ? line.toppings : undefined,
         addOns: line.addOns.length ? line.addOns : undefined,
         toppingTotal: toppingTotal || undefined,
@@ -370,7 +413,9 @@ export const orderService = {
       grandTotal: totals.grandTotal,
       paymentMethod,
       itemCount: totals.itemCount,
+      customerId: customer?.id ?? null,
       refundedAt: null,
+      cancelledAt: null,
       createdAt: timestamp,
       updatedAt: timestamp,
       deletedAt: null,
@@ -399,7 +444,6 @@ export const orderService = {
           throw new Error('Order stores are unavailable.');
         }
 
-        await db.request(orderStore.put(order));
         for (const item of items) {
           await db.request(itemStore.put(item));
         }
@@ -416,6 +460,7 @@ export const orderService = {
          * clamped at zero, so an over-sold line reads 0 rather than going
          * negative. Lines with no linked stock record are simply skipped.
          */
+        const applied: Record<ID, number> = {};
         for (const [menuItemId, sold] of deductions) {
           const matches = (await db.request(
             inventoryStore.index('by_menuItemId').getAll(menuItemId),
@@ -427,6 +472,10 @@ export const orderService = {
             0,
             Number((record.quantity - sold).toFixed(3)),
           );
+          const deducted = Number((record.quantity - next).toFixed(3));
+          if (deducted > 0) {
+            applied[menuItemId] = (applied[menuItemId] ?? 0) + deducted;
+          }
           const updated: InventoryRecord = {
             ...record,
             quantity: next,
@@ -437,6 +486,11 @@ export const orderService = {
           await db.request(inventoryStore.put(updated));
           stockWrites.push(updated);
         }
+
+        // The order header goes in last, stamped with what stock actually
+        // moved, so cancellation can restore exactly these amounts later.
+        order.stockDeductions = applied;
+        await db.request(orderStore.put(order));
       },
     );
 
@@ -462,6 +516,132 @@ export const orderService = {
     }
 
     return { order, items, sale };
+  },
+
+  /**
+   * Cancel a completed order.
+   *
+   * The order stays in history, clearly marked CANCELLED, and its sale row
+   * is flagged so every summary, cash-flow figure and customer total stops
+   * counting it. Stock is restored from the exact amounts recorded when the
+   * order completed — never more (an over-sold line), never twice (the
+   * status guard allows the transition once), and not at all when nothing
+   * was deducted.
+   */
+  async cancel(orderId: ID): Promise<OrderRecord> {
+    const order = await ordersRepository.getById(orderId);
+    if (!order || order.deletedAt) {
+      throw new Error('Order not found.');
+    }
+    if (order.status !== 'completed') {
+      throw new Error('Only a completed order can be cancelled.');
+    }
+
+    const items = await orderItemsRepository.findByIndex('by_orderId', orderId);
+    const sale = await salesRepository.findOneByIndex('by_orderId', orderId);
+    const timestamp = nowISO();
+
+    // Prefer the snapshot stamped at completion. Orders completed before
+    // that field existed fall back to deriving from their stored lines.
+    let restore: Record<ID, number> = { ...(order.stockDeductions ?? {}) };
+    if (!order.stockDeductions) {
+      restore = {};
+      for (const line of items) {
+        if (line.dealId) {
+          const deal = await dealsRepository.getById(line.dealId);
+          if (!deal || deal.deletedAt) continue;
+          for (const part of deal.items) {
+            restore[part.menuItemId] =
+              (restore[part.menuItemId] ?? 0) + part.quantity * line.quantity;
+          }
+        } else if (line.menuItemId) {
+          restore[line.menuItemId] =
+            (restore[line.menuItemId] ?? 0) + line.quantity;
+        }
+      }
+    }
+
+    const cancelled: OrderRecord = {
+      ...order,
+      status: 'cancelled',
+      cancelledAt: timestamp,
+      updatedAt: timestamp,
+      rev: (order.rev ?? 1) + 1,
+    };
+    const inventoryWrites: InventoryRecord[] = [];
+
+    await db.transaction(
+      [STORES.orders, STORES.sales, STORES.inventory],
+      'readwrite',
+      async (stores) => {
+        const orderStore = stores[STORES.orders];
+        const saleStore = stores[STORES.sales];
+        const inventoryStore = stores[STORES.inventory];
+        if (!orderStore || !saleStore || !inventoryStore) {
+          throw new Error('Order stores are unavailable.');
+        }
+
+        // Re-check inside the transaction so two rapid cancels restore
+        // stock exactly once, not twice.
+        const current = (await db.request(
+          orderStore.get(orderId),
+        )) as OrderRecord | undefined;
+        if (!current || current.status !== 'completed') {
+          throw new Error('Order is no longer cancellable.');
+        }
+
+        await db.request(orderStore.put(cancelled));
+
+        if (sale) {
+          const cancelledSale: SaleRecord = {
+            ...sale,
+            cancelledAt: timestamp,
+            updatedAt: timestamp,
+            rev: (sale.rev ?? 1) + 1,
+          };
+          await db.request(saleStore.put(cancelledSale));
+        }
+
+        for (const [menuItemId, units] of Object.entries(restore)) {
+          if (!isFiniteNumber(units) || units <= 0) continue;
+          const matches = (await db.request(
+            inventoryStore.index('by_menuItemId').getAll(menuItemId),
+          )) as InventoryRecord[];
+          const record = matches.find((row) => !row.deletedAt);
+          if (!record || !isFiniteNumber(record.quantity)) continue;
+
+          const next = Number((record.quantity + units).toFixed(3));
+          const updated: InventoryRecord = {
+            ...record,
+            quantity: next,
+            // Stock is back: the item becomes sellable again unless it is
+            // still at zero (or was withheld for a separate reason).
+            isOutOfStock: next > 0 ? 0 : 1,
+            updatedAt: nowISO(),
+            rev: (record.rev ?? 1) + 1,
+          };
+          await db.request(inventoryStore.put(updated));
+          inventoryWrites.push(updated);
+        }
+      },
+    );
+
+    try {
+      await trackChange(STORES.orders, cancelled.id, 'update', cancelled);
+      if (sale) {
+        await trackChange(STORES.sales, sale.id, 'update', {
+          ...sale,
+          cancelledAt: timestamp,
+        });
+      }
+      for (const updated of inventoryWrites) {
+        await trackChange(STORES.inventory, updated.id, 'update', updated);
+      }
+    } catch {
+      /* the cancellation is stored; sync can be reconciled later */
+    }
+
+    return cancelled;
   },
 
   async getOrder(id: ID): Promise<OrderRecord | undefined> {

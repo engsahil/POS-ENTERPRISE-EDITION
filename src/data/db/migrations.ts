@@ -121,6 +121,19 @@ export const MIGRATIONS: Migration[] = [
       }
     },
   },
+  {
+    version: 6,
+    description:
+      'Customers store plus the by_customerId index on orders for per-customer history.',
+    run: (ctx) => {
+      // ensureStore creates the customers store when missing and adds the
+      // by_customerId index to an existing orders store — both no-ops on a
+      // fresh install where the schema already includes them.
+      for (const schema of STORE_SCHEMAS) {
+        ensureStore(ctx, schema);
+      }
+    },
+  },
 ];
 
 /** Apply every migration newer than the database's current version. */

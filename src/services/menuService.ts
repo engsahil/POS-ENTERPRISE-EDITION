@@ -113,6 +113,11 @@ export interface MenuItemInput {
   isActive: boolean;
   /** Which label set the item is priced in: food sizes or drink volumes. */
   variantKind: VariantKind;
+  /**
+   * Discount percentage for this item only (0–100), or null for none.
+   * There is deliberately no system-wide automatic discount.
+   */
+  discountPercent?: number | null;
   prices: SizePrices;
 }
 
@@ -124,8 +129,24 @@ export const EMPTY_MENU_ITEM: MenuItemInput = {
   image: null,
   isActive: true,
   variantKind: 'size',
+  discountPercent: null,
   prices: { ...EMPTY_SIZE_PRICES },
 };
+
+/**
+ * Item discount percentage as stored: null when unset/invalid, otherwise
+ * clamped to 0–100 and rounded to two decimals.
+ */
+export function sanitiseDiscount(
+  value: number | null | undefined,
+): number | null {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return null;
+  }
+  const clamped = Math.min(100, Math.max(0, value));
+  if (clamped === 0) return null;
+  return Math.round(clamped * 100) / 100;
+}
 
 /**
  * Prices for labels outside the item's active kind are forced to null, so
@@ -246,6 +267,7 @@ export const menuService = {
       isActive: input.isActive ? 1 : 0,
       tracksInventory: 0,
       variantKind: input.variantKind === 'volume' ? 'volume' : 'size',
+      discountPercent: sanitiseDiscount(input.discountPercent),
     });
 
     await this.replacePrices(
@@ -268,6 +290,7 @@ export const menuService = {
       image: input.image,
       isActive: input.isActive ? 1 : 0,
       variantKind,
+      discountPercent: sanitiseDiscount(input.discountPercent),
     });
 
     await this.replacePrices(id, pricesForKind(variantKind, input.prices));

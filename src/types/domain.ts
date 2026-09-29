@@ -117,6 +117,12 @@ export interface MenuItemRecord extends BaseEntity {
    * created before this field existed simply read as 'size'.
    */
   variantKind?: VariantKind;
+  /**
+   * Item-level discount percentage (0–100), applied to this item's lines at
+   * checkout. `null`/absent means no discount. Deliberately per-item: there
+   * is no system-wide automatic discount.
+   */
+  discountPercent?: number | null;
   sortOrder?: number;
 }
 
@@ -258,8 +264,19 @@ export interface OrderRecord extends BaseEntity {
   tableLabel?: string;
   customerName?: string;
   customerPhone?: string;
+  /** Linked customer record, set when the order carried customer details. */
+  customerId?: ID | null;
   note?: string;
   completedAt?: ISODateString | null;
+  /** Set when the order is cancelled; keeps the audit trail on the order. */
+  cancelledAt?: ISODateString | null;
+  /**
+   * Units actually deducted from each inventory line when this order
+   * completed, keyed by menu item ID. Cancellation restores exactly this
+   * amount — never more (an over-sold line that clamped to zero) and never
+   * twice (cancellation is only allowed once).
+   */
+  stockDeductions?: Record<ID, number>;
 }
 
 export interface SelectedTopping {
@@ -320,8 +337,36 @@ export interface SaleRecord extends BaseEntity {
   grandTotal: Paisa;
   paymentMethod: PaymentMethod;
   itemCount: number;
+  /** Linked customer record when the order carried customer details. */
+  customerId?: ID | null;
   /** Set when the sale is later refunded. */
   refundedAt?: ISODateString | null;
+  /**
+   * Set when the order is cancelled. The row is kept for the audit trail
+   * but excluded from every total, report and cash-flow figure.
+   */
+  cancelledAt?: ISODateString | null;
+}
+
+/* ------------------------------------------------------------------ */
+/* Customers                                                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Lightweight customer record. Created automatically from the POS name or
+ * phone fields at checkout, or manually from the Customers screen. Matching
+ * is by normalised phone number first, then exact name — never by loose
+ * name matching when a phone exists.
+ */
+export interface CustomerRecord extends BaseEntity {
+  name: string;
+  /** Phone exactly as entered, for display. */
+  phone?: string;
+  /** Digits-only key used to find the same person again. Empty when none. */
+  phoneKey?: string;
+  email?: string;
+  address?: string;
+  note?: string;
 }
 
 /* ------------------------------------------------------------------ */

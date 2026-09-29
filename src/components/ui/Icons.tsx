@@ -121,6 +121,15 @@ export const UserIcon = (props: IconProps) => (
   </Icon>
 );
 
+export const CustomersIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="9" cy="8.5" r="3.25" />
+    <path d="M3 19.5a6 6 0 0 1 12 0" />
+    <path d="M15.5 5.6a3.25 3.25 0 0 1 0 5.8" />
+    <path d="M17 13.6a6 6 0 0 1 4 5.9" />
+  </Icon>
+);
+
 export const LockIcon = (props: IconProps) => (
   <Icon {...props}>
     <rect x="4.5" y="10.5" width="15" height="10" rx="2.5" />

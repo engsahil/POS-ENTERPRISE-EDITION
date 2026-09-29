@@ -9,6 +9,7 @@ import { STORES } from '@/config/storage.config';
 import type {
   AddOnRecord,
   AdminRecord,
+  CustomerRecord,
   DealRecord,
   InventoryRecord,
   ItemPriceRecord,
@@ -57,6 +58,9 @@ export const orderItemsRepository: Repository<OrderItemRecord> =
 export const salesRepository: Repository<SaleRecord> =
   createRepository<SaleRecord>(STORES.sales);
 
+export const customersRepository: Repository<CustomerRecord> =
+  createRepository<CustomerRecord>(STORES.customers);
+
 export const toppingsRepository: Repository<ToppingRecord> =
   createRepository<ToppingRecord>(STORES.toppings);
 
@@ -80,6 +84,7 @@ export const repositories = {
   [STORES.orders]: ordersRepository,
   [STORES.orderItems]: orderItemsRepository,
   [STORES.sales]: salesRepository,
+  [STORES.customers]: customersRepository,
   [STORES.toppings]: toppingsRepository,
   [STORES.addOns]: addOnsRepository,
   [STORES.settings]: settingsRepository,

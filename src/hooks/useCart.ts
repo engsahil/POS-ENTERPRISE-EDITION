@@ -32,6 +32,8 @@ export interface UseCartResult {
     name: string;
     sizeLabel: string;
     unitPrice: Paisa;
+    /** Item-level discount percentage from the menu item, if any. */
+    discountPercent?: number | null;
   }) => void;
   addDeal: (input: { dealId: ID; name: string; unitPrice: Paisa }) => void;
   setQuantity: (key: string, quantity: number) => void;

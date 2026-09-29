@@ -9,6 +9,7 @@
 import { lazy, type ReactElement } from 'react';
 import {
   AdminIcon,
+  CustomersIcon,
   InventoryIcon,
   MenuBookIcon,
   PosIcon,
@@ -19,6 +20,7 @@ import type { NavItem } from '@/types/navigation';
 
 const PosPage = lazy(() => import('@/pages/PosPage'));
 const SalesPage = lazy(() => import('@/pages/SalesPage'));
+const CustomersPage = lazy(() => import('@/pages/CustomersPage'));
 const MenuPage = lazy(() => import('@/pages/MenuPage'));
 const DealsPage = lazy(() => import('@/pages/DealsPage'));
 const InventoryPage = lazy(() => import('@/pages/InventoryPage'));
@@ -28,6 +30,7 @@ const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'));
 export const ROUTE_PATHS = {
   pos: '/',
   sales: '/sales',
+  customers: '/customers',
   menu: '/menu',
   deals: '/deals',
   inventory: '/inventory',
@@ -48,6 +51,7 @@ export interface AppRoute {
 export const appRoutes: AppRoute[] = [
   { id: 'pos', index: true, element: <PosPage /> },
   { id: 'sales', path: 'sales', element: <SalesPage /> },
+  { id: 'customers', path: 'customers', element: <CustomersPage /> },
   { id: 'menu', path: 'menu', element: <MenuPage /> },
   { id: 'deals', path: 'deals', element: <DealsPage /> },
   { id: 'inventory', path: 'inventory', element: <InventoryPage /> },
@@ -56,7 +60,7 @@ export const appRoutes: AppRoute[] = [
 ];
 
 /**
- * The six primary sections. All are `primary` so they appear in both the
+ * The seven primary sections. All are `primary` so they appear in both the
  * desktop sidebar and the mobile tab bar — no "More" drawer needed.
  */
 export const NAV_ITEMS: NavItem[] = [
@@ -74,6 +78,15 @@ export const NAV_ITEMS: NavItem[] = [
     description: 'Transactions',
     path: ROUTE_PATHS.sales,
     icon: SalesIcon,
+    primary: true,
+    matchChildren: true,
+  },
+  {
+    id: 'customers',
+    label: 'Customers',
+    description: 'People & history',
+    path: ROUTE_PATHS.customers,
+    icon: CustomersIcon,
     primary: true,
     matchChildren: true,
   },

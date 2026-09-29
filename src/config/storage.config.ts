@@ -15,8 +15,9 @@ export const DB_NAME = 'pos-db';
 /**
  * v1 — foundation stores (products, categories, orders, settings, outbox)
  * v2 — full domain schema for offline-first operation
+ * v6 — customers store, by_customerId index on orders
  */
-export const DB_VERSION = 5;
+export const DB_VERSION = 6;
 
 export const STORES = {
   admin: 'admin',
@@ -28,6 +29,7 @@ export const STORES = {
   orders: 'orders',
   orderItems: 'orderItems',
   sales: 'sales',
+  customers: 'customers',
   toppings: 'toppings',
   addOns: 'addOns',
   settings: 'settings',
@@ -122,6 +124,7 @@ export const STORE_SCHEMAS: StoreSchema[] = [
     indexes: [
       { name: 'by_orderNumber', keyPath: 'orderNumber', unique: true },
       { name: 'by_status', keyPath: 'status' },
+      { name: 'by_customerId', keyPath: 'customerId' },
       { name: 'by_createdAt', keyPath: 'createdAt' },
       { name: 'by_updatedAt', keyPath: 'updatedAt' },
     ],
@@ -144,6 +147,15 @@ export const STORE_SCHEMAS: StoreSchema[] = [
       { name: 'by_orderId', keyPath: 'orderId', unique: true },
       { name: 'by_businessDate', keyPath: 'businessDate' },
       { name: 'by_completedAt', keyPath: 'completedAt' },
+      { name: 'by_updatedAt', keyPath: 'updatedAt' },
+    ],
+  },
+  {
+    name: STORES.customers,
+    keyPath: 'id',
+    description: 'Customer records shared across orders and history.',
+    indexes: [
+      { name: 'by_phoneKey', keyPath: 'phoneKey' },
       { name: 'by_updatedAt', keyPath: 'updatedAt' },
     ],
   },

@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Button, Input } from '@/components/ui';
 import { CloseIcon, MinusIcon, PlusIcon } from '@/components/ui/Icons';
-import { lineTotal, type CartLine, type CartTotals } from '@/services/orderService';
+import {
+  lineDiscount,
+  lineTotal,
+  type CartLine,
+  type CartTotals,
+} from '@/services/orderService';
 import { formatMoney, parseMoney } from '@/utils/currency';
 import { PAYMENT_METHOD_OPTIONS } from '@/utils/payment';
 import type { Paisa } from '@/types/common';
@@ -85,7 +90,13 @@ export function CartPanel({
 
   const enteredDiscount: Paisa =
     discountText.trim() === '' ? 0 : (parseMoney(discountText) ?? 0);
-  const discountInvalid = enteredDiscount > totals.subtotal;
+  // Item-level discounts already use part of the subtotal, so the order
+  // discount may only fill what is left.
+  const discountRoom = Math.max(
+    0,
+    totals.subtotal - totals.itemDiscountTotal,
+  );
+  const discountInvalid = enteredDiscount > discountRoom;
 
   function handlePaidChange(event: React.ChangeEvent<HTMLInputElement>) {
     const next = event.target.value;
@@ -149,6 +160,8 @@ export function CartPanel({
           {lines.map((line) => {
             const label = line.sizeLabel ? `${line.name} ${line.sizeLabel}` : line.name;
             const isExpanded = expanded === line.key;
+            const itemSaving = lineDiscount(line);
+            const lineGross = lineTotal(line);
 
             return (
               <li key={line.key} className={styles.line}>
@@ -158,6 +171,7 @@ export function CartPanel({
                     {line.sizeLabel ? `${line.sizeLabel} · ${formatMoney(line.unitPrice)}` : formatMoney(line.unitPrice)}
                     {line.toppings.length > 0 ? ` • Toppings: ${line.toppings.map((t) => t.name).join(', ')}` : ''}
                     {line.addOns.length > 0 ? ` • Add-ons: ${line.addOns.map((a) => a.name).join(', ')}` : ''}
+                    {itemSaving > 0 ? ` • ${line.discountPercent}% off` : ''}
                   </span>
                 </div>
 
@@ -183,7 +197,9 @@ export function CartPanel({
                   </div>
 
                   <span className={styles.lineTotal}>
-                    {formatMoney(lineTotal(line))}
+                    {formatMoney(
+                      itemSaving > 0 ? lineGross - itemSaving : lineGross,
+                    )}
                   </span>
 
                   <button
@@ -303,14 +319,14 @@ export function CartPanel({
               name="discount"
               value={discountText}
               onChange={handleDiscountChange}
-              placeholder={`0 (max ${formatMoney(totals.subtotal)})`}
+              placeholder={`0 (max ${formatMoney(discountRoom)})`}
               inputMode="decimal"
               autoComplete="off"
               disabled={completing}
               invalid={discountInvalid}
               hint={
                 discountInvalid
-                  ? `Discount cannot exceed ${formatMoney(totals.subtotal)}.`
+                  ? `Discount cannot exceed ${formatMoney(discountRoom)}.`
                   : undefined
               }
               fullWidth
@@ -377,7 +393,9 @@ export function CartPanel({
             onClick={() =>
               onComplete({
                 amountPaid: paid,
-                discount: totals.discountTotal,
+                // Only the discount typed here: item-level discounts are
+                // recomputed from the lines themselves inside complete().
+                discount: enteredDiscount,
                 paymentMethod,
               })
             }

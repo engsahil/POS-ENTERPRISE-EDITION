@@ -1,4 +1,4 @@
-# POS — v1.1.0
+# POS — v2.1.5
 
 Offline-first Point of Sale application. **Step 3: Admin Authentication.**
 
@@ -90,10 +90,12 @@ src/
     repositories/        generic typed repository factory + registry
     storage/             safe localStorage for UI preferences
   hooks/                 useOnlineStatus, useMenu, useInventory, useDeals,
-                         useCart, useSales, useSyncStatus, useInstallState
-  pages/                 Login, Pos, Sales, Menu, Deals, Inventory, Admin,
-                         NotFound
+                         useCart, useSales, useCustomers, useSyncStatus,
+                         useInstallState
+  pages/                 Login, Pos, Sales, Customers, Menu, Deals, Inventory,
+                         Admin, NotFound
   services/              authService (login, session, credentials)
+                         customerService (records, stats, order history),
                          databaseService (startup, diagnostics, reset)
                          dealService, escpos (ESC/POS encoder), inventoryService,
                          menuService, orderService, printService,
@@ -110,7 +112,7 @@ src/
 
 ## Local database
 
-All data lives in IndexedDB (`pos-db`, version 4) so the terminal keeps working
+All data lives in IndexedDB (`pos-db`, version 6) so the terminal keeps working
 without a network connection. There is no demo data — the database starts
 completely empty apart from the admin account created on first sign-in.
 
@@ -120,13 +122,14 @@ completely empty apart from the admin account created on first sign-in.
 | --- | --- |
 | `admin` | Admin account and password hash (unique `by_username`) |
 | `restaurant` | Restaurant profile, tax configuration |
-| `menuItems` | Menu items |
+| `menuItems` | Menu items, including each item's optional discount percent |
 | `itemPrices` | Sizes and prices per menu item |
 | `inventory` | Stock levels and reorder points |
 | `deals` | Deals and combo definitions |
-| `orders` | Order headers (unique `by_orderNumber`) |
+| `orders` | Order headers (unique `by_orderNumber`; indexed by status and customer) |
 | `orderItems` | Order line items |
 | `sales` | Completed sales, indexed by business date |
+| `customers` | Customer records (unique by normalised phone when present) |
 | `license` | Licence/activation state |
 | `settings` | Key/value preferences |
 | `syncQueue` | Pending local changes awaiting upload |
@@ -503,8 +506,21 @@ Because weeks start on Monday, the weekly total can legitimately exceed the
 monthly total in the first days of a month - the week reaches back into the
 previous one. This is correct, not a bug.
 
-Refunded sales (`refundedAt` set) are excluded from every figure. Averages
+Refunded sales (`refundedAt` set) are excluded from every figure, and so are
+cancelled orders: cancellation sets `cancelledAt` on the order and its `sales`
+row in the same transaction that restores stock, and every total filters
+through `isCountable`. The row stays in the Sales list with a `CANCELLED`
+badge, but no total, count or average on this page ever includes it. Averages
 guard the division, so no orders yields `0`, never `NaN`.
+
+### Cash flow
+
+Under the chart, the **Cash flow** table reports money received per payment
+method — Cash, Card, Digital Payment and Other — for **Today**, **This week**
+and **All time**. Each figure is the sum of `amount` on completed orders with
+that `paymentMethod`; cancelled orders are excluded, so cancelling an order
+removes its contribution from the method it was paid with. With no completed
+orders every cell reads `Rs. 0`.
 
 ### Visualisation
 
@@ -513,6 +529,30 @@ values do not justify a charting dependency, so the runtime stays at three
 packages. Days with no sales render an empty track rather than being omitted,
 and any day with real sales gets a minimum bar height so a small figure is
 never mistaken for an empty day.
+
+## Customers
+
+The **Customers** section (between Sales and Menu) is the lightweight customer
+record the POS asked for: it exists to attach a name and phone number to
+orders, and to look those orders up again.
+
+- **Customers are created automatically.** Completing an order that carries a
+  name or a phone number upserts a customer record from the POS's optional
+  customer fields. A phone number that already exists reuses that record
+  instead of creating a duplicate, so repeat customers accumulate history
+  rather than rows.
+- **The list** shows name and (only when one was given) phone, with a search
+  box filtering on both. Empty state: "No customers yet".
+- **The detail panel** shows Orders completed, Total spent and Last order,
+  plus the order history: number, date, type (Dine-In/Takeaway/Delivery),
+  payment method and amount. Cancelled orders are listed with a `CANCELLED`
+  badge but are not counted in the stats and contribute nothing to the total.
+- **Manual records** — "Add customer" works without ever placing an order, and
+  details can be edited from the detail panel.
+
+Nothing else is collected: no emails, addresses, loyalty tiers or anything the
+operator did not type. The section is available on the sidebar, the mobile tab
+bar and at `/customers`.
 
 ## POS billing
 
@@ -524,10 +564,20 @@ line.
 
 The cart supports quantity steppers, per-line removal and Clear, and shows
 **Subtotal**, an optional **Discount** and **Total** (plus a tax row when a
-rate is configured). The **Discount** field takes a rupee amount that reduces
-the payable total the moment it is typed; values above the subtotal are
-flagged ("Discount cannot exceed ...") and block completion, so the total can
-never go negative. The footer also captures the **Customer paid** amount and
+rate is configured). Two kinds of discount exist and simply add together:
+
+- **Item discounts** — a percentage configured per menu item (Menu screen),
+  applied to every line of that item. The cart line shows it inline
+  ("350 ml · Rs. 100 · 10% off"), the receipt's line amount is already
+  discounted, and the menu list carries a "10% OFF" badge. Deal lines never
+  take an item discount.
+- **Order discount** — the **Discount** field at checkout takes a rupee amount
+  that reduces the payable total the moment it is typed. Values above the
+  remaining room are flagged ("Discount cannot exceed ...") and block
+  completion, so the two discounts can never overlap and the total can never
+  go negative.
+
+The footer also captures the **Customer paid** amount and
 calculates **Return / Change** immediately as it is typed: an empty field
 means the customer pays the exact total, an overpayment shows the change due,
 and an underpayment blocks completion with a "Short by ..." hint until it is
@@ -570,6 +620,28 @@ bundle quantity — so a completed sale can never skip its stock movement and a
 failed checkout can never perform one. Quantities are clamped at zero, so
 stock never goes negative and a stock write can never fail the payment; an
 item that reaches zero is marked out of stock and disappears from the POS.
+
+### Cancelling an order
+
+Orders on the Sales screen can be cancelled — deliberately not a single
+accidental click: the Cancel button opens an explicit confirmation ("cancel
+this order?", with an `aria-describedby` link to the order number) and only
+"Yes, cancel" proceeds.
+
+Cancelling runs as one atomic operation that:
+
+- flips the order's status to `cancelled` (a new `by_status` index reads them),
+- sets `cancelledAt` on the order **and its `sales` row**, so revenue, order
+  counts, averages and the cash-flow table drop the amount immediately (the
+  row itself stays for history, and `isCountable` filters it from every
+  figure),
+- **restores linked stock** by exactly the quantities that order deducted, and
+- leaves the order itself in place for history.
+
+A cancelled order keeps its number and details in the Sales list and in the
+customer's history, shown with a `CANCELLED` badge, is excluded from customer
+stats, and cannot be cancelled twice (its Cancel button is gone). All of it
+survives a reload.
 
 ### Offline
 
@@ -758,6 +830,26 @@ volume blank and the item simply is not sold in it. Prices are entered and
 displayed in Pakistani Rupees only, and stored as integer paisa so no
 floating-point drift is possible.
 
+### Item discount
+
+Each item may also carry an optional **discount percent** (`Item discount (%)`
+in Add/Edit, saved with the item). Its effects follow the item everywhere:
+
+- The menu list shows a compact badge — `10% OFF` — beside the name.
+- POS tiles and cart lines show the discount inline ("350 ml · Rs. 100 ·
+  10% off"), and the line amount is reduced immediately.
+- The receipt's line **Amount** is already discounted, and the order's Discount
+  row reports the sum. Deal lines are never discounted.
+- Empty or `0` disables it; the form accepts only `0–100` ("Enter a
+  percentage between 0 and 100.") with the service sanitising what is stored,
+  and the checkout calculation clamps defensively so the discount can never
+  exceed the line. Editing the field survives an item edit round-trip, and the
+  discount is stored per item so a later price change keeps it.
+
+This is independent of the rupee order-level **Discount** typed at checkout —
+the two simply add, each clamped so the payable total can never go negative
+(see POS billing).
+
 ### Storage shape
 
 An item is one `menuItems` record plus one `itemPrices` row per offered
@@ -826,7 +918,7 @@ trigger a one-minute lockout.
 
 ## Key decisions
 
-**Version** — `1.1.0` in `package.json`, `src/config/app.config.ts` and `public/sw.js`.
+**Version** — `2.1.5` in `package.json` and `src/config/app.config.ts` (the service worker cache revision is derived from the built assets).
 
 **Currency** — Pakistani Rupees only. Money is stored as **integer paisa** to avoid
 floating-point drift and formatted through `formatMoney()` so `Rs.` is never
@@ -834,8 +926,9 @@ hard-coded in the UI. `parseMoney()` accepts `Rs. 1,250.50`, `1,250`, `PKR 300`.
 
 **Routing** — `src/app/routes.tsx` is the single registry. Pages are lazy-loaded
 and code-split; the sidebar and mobile tab bar are generated from `NAV_ITEMS`,
-so navigation can never drift out of sync with the router. The four sections are
-POS (`/`), Sales (`/sales`), Inventory (`/inventory`) and Admin (`/admin`).
+so navigation can never drift out of sync with the router. The seven sections
+are POS (`/`), Sales (`/sales`), Customers (`/customers`), Menu (`/menu`),
+Deals (`/deals`), Inventory (`/inventory`) and Admin (`/admin`).
 
 **Storage** — IndexedDB is the system of record, ready for offline-first. Every
 record carries `createdAt` / `updatedAt` / `deletedAt` / `rev`, deletes are soft
@@ -856,7 +949,7 @@ scale-down on button press. All of it collapses under
 
 **Responsive** — Desktop (≥1024px) full sidebar with labels · Tablet
 (640–1023px) compact icon rail · Mobile (<640px) bottom tab bar carrying all
-four sections. Touch targets are 44px minimum, inputs use 16px text to avoid iOS
+seven sections. Touch targets are 44px minimum, inputs use 16px text to avoid iOS
 zoom-on-focus, and safe-area insets are respected.
 
 **PWA** — Manifest, icons (incl. maskable), theme colour and an app-shell service
@@ -866,7 +959,7 @@ hot reload is unaffected.
 **No chrome** — There is no global header, no footer, no marketing sections and
 no dashboard widgets. Navigation is the only persistent UI; each screen renders
 its own `PageHeader`. The offline banner appears only when the connection drops.
-Because all four sections fit in the mobile tab bar, there is no hamburger menu
+Because every section fits in the mobile tab bar, there is no hamburger menu
 or drawer either.
 
 **No invented data** — Every section is a professional empty state. The only
@@ -1194,7 +1287,7 @@ through the same display-mode query the application reads.
 
 Settings, privacy and branding (50 assertions):
 
-- Application information shows Version `1.1.0`, `Pakistani Rupees (Rs.)`,
+- Application information shows Version `2.1.5`, `Pakistani Rupees (Rs.)`,
   `PKR`, locale, time zone, local storage and provider.
 - Privacy Policy renders with 10 correctly numbered sections covering what is
   stored, the absence of analytics, when data leaves the device, PBKDF2
@@ -1263,3 +1356,30 @@ Confirmed already clean and left alone: 6 font sizes on one family, 4 border
 radii, no fake or demo content, no unnecessary header or footer, all five
 empty states have a heading and an action, validation messages are visible,
 and no runtime dependency is unused (react, react-dom, react-router-dom).
+
+v2.1.5 regression (Step 21, headless Chromium at 1440x900):
+
+- `tsc --noEmit` — clean under strict mode with `noUncheckedIndexedAccess`.
+- `npm run build` — passes; the new Customers page and hook ship as their own
+  code-split chunks; service worker precaches 42 files.
+- 24/24 automated browser assertions, in one run with zero console errors:
+  version `2.1.5`; menu items with custom volume, XL and item discounts;
+  editing keeps the custom volume; inventory lines 99/20/50; POS volume and
+  XL buttons; Order A (Dine-In 10x Coke, item discount, order discount, cash
+  overpay: subtotal 1000, discount -100, total 900, paid 1000, change 100);
+  receipt rows including the item-discount line amount; Print Customer (1
+  page), Print Kitchen (1 page, `KITCHEN`-marked) and Print Both (2 pages,
+  split with the 80mm width set); stock 89 after the prints; Sales cash
+  900 with the discount meta; Orders B (XL, card, 5%) / C (customer phone,
+  digital) / D (underpayment blocked, exact completes); Customers records and
+  stats; cash flow 900 / 237.50 / 150; cancel Order A (badge, cash to 0,
+  stock back to 99, TODAY to 387.50, customer stats to 0, no Cancel button
+  twice); reload persistence; offline completion deducts stock once with Print
+  Both still working, stock 98 and cash 90 after; customer history shows 1
+  completed + 1 cancelled; menu discount badges; all seven routes render; and
+  no console errors across the whole run.
+- UI reviewed screen by screen in screenshots: POS cart with item and order
+  discounts, thermal receipt, menu list with `10% OFF` / `5% OFF` badges,
+  Sales summary with the cash-flow table, and the post-cancellation zeroed
+  state — spacing, hierarchy and states consistent with the existing design
+  tokens.

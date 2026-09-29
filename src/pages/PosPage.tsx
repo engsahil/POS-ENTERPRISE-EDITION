@@ -12,6 +12,7 @@ import { Button, EmptyState, Input } from '@/components/ui';
 import { PosIcon, SearchIcon } from '@/components/ui/Icons';
 import { useCart } from '@/hooks/useCart';
 import { useDeals } from '@/hooks/useDeals';
+import { notifyCustomersChanged } from '@/hooks/useCustomers';
 import { notifyInventoryChanged } from '@/hooks/useInventory';
 import { notifySalesChanged } from '@/hooks/useSales';
 import { useMenu } from '@/hooks/useMenu';
@@ -67,6 +68,7 @@ export default function PosPage() {
       name: entry.item.name,
       sizeLabel: size,
       unitPrice: price,
+      discountPercent: entry.item.discountPercent ?? null,
     });
   }
 
@@ -101,6 +103,7 @@ export default function PosPage() {
       setCompleted(autoShow ? result : null);
       notifyInventoryChanged();
       notifySalesChanged();
+      notifyCustomersChanged();
     } catch {
       setError('Could not complete the order. Please try again.');
     } finally {
