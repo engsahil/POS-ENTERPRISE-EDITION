@@ -62,19 +62,22 @@ export function ReceiptView({ model, kitchenModel, actions }: ReceiptViewProps) 
   const currentRef = activeTab === 'customer' ? customerRef : kitchenRef;
 
   /*
-   * Print both receipts in one job.
+   * Print both receipts in one job, as TWO genuinely separate pages.
    *
    * The two on-screen receipts are cloned into a single temporary container
-   * and handed to the SAME printService pipeline a single receipt uses. That
-   * is the whole fix for the double-print glitch: the previous
-   * implementation built its own page style with `@page { size: <w> auto }`,
-   * which is invalid CSS — browsers drop the descriptor entirely and print
-   * on the default Letter/A4 sheet, stretching both receipts across it — and
-   * forced a page break after the first receipt, which then produced a blank
-   * trailing section. printService instead measures the real content height
-   * and injects two explicit lengths (`size: 80mm 210mm`), so the pair prints
-   * at the correct paper width with a tear line between them and no
-   * duplicated, missing or overlapping content.
+   * and handed to the same printService pipeline a single receipt uses.
+   * Two things make them land on separate physical pages:
+   *
+   *   1. The cloned customer receipt carries `break-after: page` (plus the
+   *      legacy `page-break-after: always`), so the print formatter starts
+   *      a new page after it.
+   *   2. printService is called with `paginate`, which sizes `@page` to the
+   *      tallest single receipt instead of the whole stack. With the old
+   *      stack-height page (or an invalid `size: <w> auto`, which browsers
+   *      drop entirely) both receipts were fitted onto ONE sheet.
+   *
+   * Result: page 1 = customer receipt, page 2 = kitchen receipt, nothing
+   * else. Customer-only and Kitchen-only prints are untouched.
    */
   function printBoth() {
     const customerClone = customerRef.current?.firstElementChild?.cloneNode(
@@ -93,15 +96,11 @@ export function ReceiptView({ model, kitchenModel, actions }: ReceiptViewProps) 
     const container = document.createElement('div');
     if (customerClone) container.appendChild(customerClone);
 
-    // Tear line between the two receipts. The print stylesheet zeroes
-    // padding/margin/border on direct children of the print container, so
-    // the styled line sits one level in where those resets do not reach.
+    // Page break between the two receipts — only meaningful when both are
+    // present; with just one it would only produce a blank trailing page.
     if (customerClone && kitchenClone) {
-      const cutWrap = document.createElement('div');
-      const cutLine = document.createElement('div');
-      cutLine.className = styles.cutLine ?? '';
-      cutWrap.appendChild(cutLine);
-      container.appendChild(cutWrap);
+      customerClone.style.breakAfter = 'page';
+      customerClone.style.pageBreakAfter = 'always';
     }
 
     if (kitchenClone) container.appendChild(kitchenClone);
@@ -115,7 +114,7 @@ export function ReceiptView({ model, kitchenModel, actions }: ReceiptViewProps) 
     window.addEventListener('afterprint', cleanup);
     window.setTimeout(cleanup, 2000);
 
-    printReceipt({ width: width as ReceiptWidth, container });
+    printReceipt({ width: width as ReceiptWidth, container, paginate: true });
   }
 
   return (

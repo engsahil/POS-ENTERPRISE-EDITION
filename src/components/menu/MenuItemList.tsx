@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui';
 import { ImageIcon, TrashIcon } from '@/components/ui/Icons';
 import {
-  VARIANT_LABELS,
   sizeBadgeLabel,
   type MenuItemWithPrices,
 } from '@/services/menuService';
@@ -113,7 +112,7 @@ export function MenuItemList({
 
                 {entry.availableSizes.length > 0 ? (
                   <span className={styles.prices}>
-                    {VARIANT_LABELS.filter((s) => entry.prices[s] !== null).map((s) => (
+                    {entry.availableSizes.map((s) => (
                       <span key={s} className={styles.price}>
                         <span className={styles.priceSize}>
                           {sizeBadgeLabel(s)}

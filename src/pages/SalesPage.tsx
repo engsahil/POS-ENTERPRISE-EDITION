@@ -7,6 +7,7 @@ import { SalesIcon } from '@/components/ui/Icons';
 import { useSales } from '@/hooks/useSales';
 import { formatMoney } from '@/utils/currency';
 import { formatDate, formatTime } from '@/utils/date';
+import { formatPaymentMethod } from '@/utils/payment';
 import styles from './SalesPage.module.css';
 
 export default function SalesPage() {
@@ -78,6 +79,13 @@ export default function SalesPage() {
                       : formatDate(sale.completedAt)}{' '}
                     &middot; {sale.itemCount} item
                     {sale.itemCount === 1 ? '' : 's'}
+                    {' \u00b7 '}
+                    {formatPaymentMethod(sale.paymentMethod)}
+                    {sale.discountTotal > 0 ? (
+                      <>
+                        {' \u00b7 '}Discount {formatMoney(sale.discountTotal)}
+                      </>
+                    ) : null}
                   </span>
                 </div>
                 <span className={styles.rowTotal}>

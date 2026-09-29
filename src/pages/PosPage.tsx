@@ -15,11 +15,10 @@ import { useDeals } from '@/hooks/useDeals';
 import { notifyInventoryChanged } from '@/hooks/useInventory';
 import { notifySalesChanged } from '@/hooks/useSales';
 import { useMenu } from '@/hooks/useMenu';
-import type { VariantLabel } from '@/services/menuService';
 import { orderService, type CompletedOrder } from '@/services/orderService';
 import { SETTING_KEYS, settingsService } from '@/services/settingsService';
 import type { OrderType } from '@/types/domain';
-import type { Paisa } from '@/types/common';
+import type { CartCompletionInput } from '@/components/pos/CartPanel';
 import styles from './PosPage.module.css';
 
 export default function PosPage() {
@@ -57,10 +56,10 @@ export default function PosPage() {
 
   function handleSelect(
     entry: (typeof items)[number],
-    size: VariantLabel,
+    size: string,
   ): void {
     const price = entry.prices[size];
-    if (price === null) return;
+    if (price === null || price === undefined) return;
 
     cart.addLine({
       menuItemId: entry.item.id,
@@ -71,7 +70,7 @@ export default function PosPage() {
     });
   }
 
-  async function handleComplete(amountPaid: Paisa) {
+  async function handleComplete(payment: CartCompletionInput) {
     if (cart.isEmpty) return;
 
     // Validate table for dine-in
@@ -85,7 +84,9 @@ export default function PosPage() {
     try {
       const result = await orderService.complete({
         lines: cart.lines,
-        amountPaid,
+        amountPaid: payment.amountPaid,
+        discount: payment.discount,
+        paymentMethod: payment.paymentMethod,
         orderType,
         tableLabel: orderType === 'dine-in' ? tableLabel.trim() : undefined,
         customerName: customerName.trim() || undefined,
@@ -267,11 +268,12 @@ export default function PosPage() {
               lines={cart.lines}
               totals={cart.totals}
               completing={completing}
+              onDiscountChange={cart.setDiscount}
               onIncrement={cart.incrementLine}
               onDecrement={cart.decrementLine}
               onRemove={cart.removeLine}
               onClear={cart.clear}
-              onComplete={(amountPaid) => void handleComplete(amountPaid)}
+              onComplete={(input) => void handleComplete(input)}
               onUpdateToppings={cart.updateLineToppings}
               onUpdateAddOns={cart.updateLineAddOns}
             />

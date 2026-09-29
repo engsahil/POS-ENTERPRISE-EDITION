@@ -1,5 +1,6 @@
 import type { ReceiptModel, ReceiptWidth } from '@/services/receiptService';
 import { formatMoney } from '@/utils/currency';
+import { formatPaymentMethod } from '@/utils/payment';
 import styles from './Receipt.module.css';
 
 export interface ReceiptProps {
@@ -196,10 +197,16 @@ export function Receipt({ model, width }: ReceiptProps) {
         </div>
 
         {model.amountPaid != null ? (
-          <div className={styles.totalRow}>
-            <dt>Paid ({model.paymentMethod})</dt>
-            <dd>{formatMoney(model.amountPaid)}</dd>
-          </div>
+          <>
+            <div className={styles.totalRow}>
+              <dt>Payment method</dt>
+              <dd>{formatPaymentMethod(model.paymentMethod)}</dd>
+            </div>
+            <div className={styles.totalRow}>
+              <dt>Paid</dt>
+              <dd>{formatMoney(model.amountPaid)}</dd>
+            </div>
+          </>
         ) : null}
 
         {model.changeDue != null && model.changeDue > 0 ? (

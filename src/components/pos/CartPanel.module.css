@@ -222,7 +222,16 @@
   font-weight: var(--fw-semibold);
 }
 
-/* ---------- Payment: customer paid + return amount ---------- */
+/* Discount reduces the payable total — slightly emphasized, still quiet. */
+.discountRow {
+  color: var(--color-text);
+}
+
+.discountRow dd {
+  font-weight: var(--fw-semibold);
+}
+
+/* ---------- Payment: discount, paid, return, method ---------- */
 
 .payment {
   display: flex;
@@ -251,6 +260,30 @@
 
 .returnValueActive {
   color: var(--color-success);
+}
+
+/* Payment method: one quiet radio row. */
+.methods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+}
+
+.method {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.methodInput {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--color-accent);
+  cursor: pointer;
 }
 
 .actions {

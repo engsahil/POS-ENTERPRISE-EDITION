@@ -3,12 +3,13 @@
  *
  * A menu item is stored as one `menuItems` record plus one `itemPrices` row
  * per offered variant. Food items are priced in the standard sizes
- * (Small / Medium / Large / Extra Large / XL); cold drinks are priced in
- * volume labels (250 ml, 330 ml, 500 ml / Half Liter, 1 Liter, 1.5 Liter).
- * Both sets use the same variant/price rows, so nothing about the storage
- * or sale flow changes — only which labels an item offers. Prices live in
- * their own store so cost prices or per-size stock can be added later
- * without reshaping the item record.
+ * (Small / Medium / Large / Extra Large / XL); cold drinks are priced by
+ * volume. Predefined volumes (250 ml … 1.5 Liter) are offered as a
+ * starting point, but any numeric volume the operator enters (for example
+ * "350 ml" or "2 Liter") is a normal label stored on its own price row —
+ * nothing about the storage or sale flow changes. Prices live in their
+ * own store so cost prices or per-size stock can be added later without
+ * reshaping the item record.
  *
  * Nothing is ever seeded: no default products, no demo items, no sample
  * prices. An unconfigured terminal has zero menu items.
@@ -48,7 +49,7 @@ export type VariantLabel = SizeLabel | VolumeLabel;
 /** Every known label, food sizes first — the canonical display order. */
 export const VARIANT_LABELS: readonly VariantLabel[] = [...SIZES, ...VOLUME_SIZES];
 
-/** The label set an item of the given kind offers. */
+/** The label set an item of the given kind offers as predefined options. */
 export function labelsForKind(kind: VariantKind): readonly VariantLabel[] {
   return kind === 'volume' ? VOLUME_SIZES : SIZES;
 }
@@ -56,10 +57,10 @@ export function labelsForKind(kind: VariantKind): readonly VariantLabel[] {
 /**
  * Compact badge for a label where space is tight (POS tiles, list rows).
  * The classic single letters stay single letters; longer labels — Extra
- * Large, XL and the volume options — are shown in full so they are never
- * confused with each other.
+ * Large, XL, the predefined volumes and any custom volume such as
+ * "350 ml" — are shown in full so they are never confused with each other.
  */
-export function sizeBadgeLabel(label: VariantLabel): string {
+export function sizeBadgeLabel(label: string): string {
   switch (label) {
     case 'Small':
       return 'S';
@@ -72,8 +73,11 @@ export function sizeBadgeLabel(label: VariantLabel): string {
   }
 }
 
-/** Prices keyed by variant label. `null` means "not offered in this label". */
-export type SizePrices = Record<VariantLabel, Paisa | null>;
+/**
+ * Prices keyed by variant label — known labels and any custom volume the
+ * operator added. `null` means "not offered in this label".
+ */
+export type SizePrices = Record<string, Paisa | null>;
 
 export const EMPTY_SIZE_PRICES: SizePrices = {
   Small: null,
@@ -94,8 +98,11 @@ export interface MenuItemWithPrices {
   prices: SizePrices;
   /** Lowest priced size, or null when the item has no prices yet. */
   fromPrice: Paisa | null;
-  /** Variant labels that actually have a price, in display order. */
-  availableSizes: VariantLabel[];
+  /**
+   * Variant labels that actually have a price, in display order: the
+   * predefined labels first, then any custom volumes by stored order.
+   */
+  availableSizes: string[];
 }
 
 export interface MenuItemInput {
@@ -123,12 +130,15 @@ export const EMPTY_MENU_ITEM: MenuItemInput = {
 /**
  * Prices for labels outside the item's active kind are forced to null, so
  * an item can never end up offering both food sizes and volumes at once.
+ * When the kind is `volume`, only the food-size labels are cleared — any
+ * custom volumes the operator entered are kept as they are.
  */
 function pricesForKind(kind: VariantKind, prices: SizePrices): SizePrices {
   const result: SizePrices = { ...EMPTY_SIZE_PRICES, ...prices };
-  const offered = labelsForKind(kind);
-  for (const label of VARIANT_LABELS) {
-    if (!offered.includes(label)) result[label] = null;
+  for (const label of Object.keys(result)) {
+    const isFoodSize = (SIZES as readonly string[]).includes(label);
+    const keep = kind === 'volume' ? !isFoodSize : isFoodSize;
+    if (!keep) result[label] = null;
   }
   return result;
 }
@@ -140,16 +150,30 @@ function summarise(
   const kind: VariantKind = item.variantKind === 'volume' ? 'volume' : 'size';
   const prices: SizePrices = { ...EMPTY_SIZE_PRICES };
 
+  // Predefined and custom labels alike are plain strings on their rows.
+  const sortOrderOf = new Map<string, number>();
   for (const row of priceRows) {
     if (row.deletedAt) continue;
-    if ((VARIANT_LABELS as readonly string[]).includes(row.label)) {
-      prices[row.label as VariantLabel] = row.price;
-    }
+    prices[row.label] = row.price;
+    sortOrderOf.set(row.label, row.sortOrder ?? 0);
   }
 
   // Only the active kind's labels are ever offered for sale.
   const normalised = pricesForKind(kind, prices);
-  const availableSizes = VARIANT_LABELS.filter((s) => normalised[s] !== null);
+  const knownIndex = (label: string): number =>
+    (VARIANT_LABELS as readonly string[]).indexOf(label);
+  // Predefined labels keep their canonical order; custom volumes sort
+  // after them by the order they were added (row sortOrder).
+  const availableSizes = Object.keys(normalised)
+    .filter((label) => normalised[label] !== null)
+    .sort((a, b) => {
+      const ia = knownIndex(a);
+      const ib = knownIndex(b);
+      if (ia >= 0 && ib >= 0) return ia - ib;
+      if (ia >= 0) return -1;
+      if (ib >= 0) return 1;
+      return (sortOrderOf.get(a) ?? 0) - (sortOrderOf.get(b) ?? 0);
+    });
   const values = availableSizes.map((s) => normalised[s] as Paisa);
 
   return {
@@ -287,8 +311,10 @@ export const menuService = {
   /**
    * Make the stored price rows match `prices` exactly: update existing rows,
    * create missing ones, and hard-delete labels that no longer have a price.
-   * Every known label is considered, so clearing a size or switching an
-   * item's kind removes the now-unused rows rather than orphaning them.
+   * Every predefined label plus every custom label present in `prices` or
+   * in storage is considered, so clearing a size, removing a custom volume,
+   * or switching an item's kind removes the now-unused rows rather than
+   * orphaning them.
    */
   async replacePrices(menuItemId: ID, prices: SizePrices): Promise<void> {
     const existing = await itemPricesRepository.findByIndex(
@@ -298,11 +324,36 @@ export const menuService = {
     );
     const bySize = new Map(existing.map((row) => [row.label, row]));
 
-    for (const size of VARIANT_LABELS) {
+    const knownCount = VARIANT_LABELS.length;
+    const knownIndex = (label: string): number =>
+      (VARIANT_LABELS as readonly string[]).indexOf(label);
+
+    // Custom rows keep their stored order; new ones append after it.
+    let nextCustomOrder = knownCount;
+    for (const row of existing) {
+      const order = row.sortOrder ?? 0;
+      if (order >= nextCustomOrder) nextCustomOrder = order + 1;
+    }
+
+    const labels = new Set<string>([
+      ...VARIANT_LABELS,
+      ...Object.keys(prices),
+      ...bySize.keys(),
+    ]);
+
+    for (const size of labels) {
       // sanitisePrice turns NaN/Infinity/negative into null (= not offered),
       // so an invalid price can never be stored or later summed.
       const value = sanitisePrice(prices[size]);
       const row = bySize.get(size);
+      const predefinedIndex = knownIndex(size);
+      const existingOrder = row?.sortOrder ?? 0;
+      const sortOrder =
+        predefinedIndex >= 0
+          ? predefinedIndex
+          : row && existingOrder >= knownCount
+            ? existingOrder
+            : nextCustomOrder++;
 
       if (value === null) {
         if (row) await itemPricesRepository.remove(row.id, { hard: true });
@@ -313,7 +364,7 @@ export const menuService = {
         await itemPricesRepository.update(row.id, {
           price: value,
           deletedAt: null,
-          sortOrder: VARIANT_LABELS.indexOf(size),
+          sortOrder,
         } as Partial<ItemPriceRecord>);
       } else {
         await itemPricesRepository.create({
@@ -321,7 +372,7 @@ export const menuService = {
           label: size,
           price: value,
           isDefault: 0,
-          sortOrder: VARIANT_LABELS.indexOf(size),
+          sortOrder,
         });
       }
     }

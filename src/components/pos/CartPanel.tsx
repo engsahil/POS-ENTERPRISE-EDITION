@@ -3,21 +3,31 @@ import { Button, Input } from '@/components/ui';
 import { CloseIcon, MinusIcon, PlusIcon } from '@/components/ui/Icons';
 import { lineTotal, type CartLine, type CartTotals } from '@/services/orderService';
 import { formatMoney, parseMoney } from '@/utils/currency';
+import { PAYMENT_METHOD_OPTIONS } from '@/utils/payment';
 import type { Paisa } from '@/types/common';
+import type { PaymentMethod } from '@/types/domain';
 import { useToppings } from '@/hooks/useToppings';
 import { useAddOns } from '@/hooks/useAddOns';
 import type { SelectedAddOn, SelectedTopping } from '@/types/domain';
 import styles from './CartPanel.module.css';
 
+export interface CartCompletionInput {
+  amountPaid: Paisa;
+  discount: Paisa;
+  paymentMethod: PaymentMethod;
+}
+
 export interface CartPanelProps {
   lines: CartLine[];
   totals: CartTotals;
   completing: boolean;
+  /** Push the typed discount into the cart so totals recalculate live. */
+  onDiscountChange: (value: Paisa) => void;
   onIncrement: (key: string) => void;
   onDecrement: (key: string) => void;
   onRemove: (key: string) => void;
   onClear: () => void;
-  onComplete: (amountPaid: Paisa) => void;
+  onComplete: (input: CartCompletionInput) => void;
   onUpdateToppings: (key: string, toppings: SelectedTopping[]) => void;
   onUpdateAddOns: (key: string, addOns: SelectedAddOn[]) => void;
 }
@@ -26,6 +36,7 @@ export function CartPanel({
   lines,
   totals,
   completing,
+  onDiscountChange,
   onIncrement,
   onDecrement,
   onRemove,
@@ -46,10 +57,24 @@ export function CartPanel({
    * the return calculation below.
    */
   const [paidText, setPaidText] = useState('');
+  /* Discount entry, kept as text so partial input like "12." stays editable. */
+  const [discountText, setDiscountText] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
 
   useEffect(() => {
-    if (lines.length === 0) setPaidText('');
+    if (lines.length === 0) {
+      setPaidText('');
+      setDiscountText('');
+      setPaymentMethod('cash');
+    }
   }, [lines.length]);
+
+  // Push the typed discount into the cart so totals recalculate immediately.
+  useEffect(() => {
+    const parsed =
+      discountText.trim() === '' ? 0 : (parseMoney(discountText) ?? 0);
+    onDiscountChange(parsed);
+  }, [discountText, onDiscountChange]);
 
   const total = totals.grandTotal;
   const paid: Paisa =
@@ -58,11 +83,21 @@ export function CartPanel({
     paidText.trim() === '' ? 0 : Math.max(0, total - paid);
   const returnAmount: Paisa = Math.max(0, paid - total);
 
+  const enteredDiscount: Paisa =
+    discountText.trim() === '' ? 0 : (parseMoney(discountText) ?? 0);
+  const discountInvalid = enteredDiscount > totals.subtotal;
+
   function handlePaidChange(event: React.ChangeEvent<HTMLInputElement>) {
     const next = event.target.value;
     // Digits and at most one decimal point — same rule as PriceInput.
     if (next !== '' && !/^\d*\.?\d{0,2}$/.test(next)) return;
     setPaidText(next);
+  }
+
+  function handleDiscountChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const next = event.target.value;
+    if (next !== '' && !/^\d*\.?\d{0,2}$/.test(next)) return;
+    setDiscountText(next);
   }
 
   function toggleExpand(key: string, type: 'toppings' | 'addons') {
@@ -236,6 +271,13 @@ export function CartPanel({
             <dd>{formatMoney(totals.subtotal)}</dd>
           </div>
 
+          {totals.discountTotal > 0 ? (
+            <div className={`${styles.totalRow} ${styles.discountRow}`}>
+              <dt>Discount</dt>
+              <dd>-{formatMoney(totals.discountTotal)}</dd>
+            </div>
+          ) : null}
+
           {totals.taxPercent > 0 ? (
             <div className={styles.totalRow}>
               <dt>
@@ -256,6 +298,23 @@ export function CartPanel({
 
         {!empty ? (
           <div className={styles.payment}>
+            <Input
+              label="Discount"
+              name="discount"
+              value={discountText}
+              onChange={handleDiscountChange}
+              placeholder={`0 (max ${formatMoney(totals.subtotal)})`}
+              inputMode="decimal"
+              autoComplete="off"
+              disabled={completing}
+              invalid={discountInvalid}
+              hint={
+                discountInvalid
+                  ? `Discount cannot exceed ${formatMoney(totals.subtotal)}.`
+                  : undefined
+              }
+              fullWidth
+            />
             <Input
               label="Customer paid"
               name="amountPaid"
@@ -283,6 +342,26 @@ export function CartPanel({
                 {formatMoney(returnAmount)}
               </span>
             </div>
+
+            <div
+              className={styles.methods}
+              role="radiogroup"
+              aria-label="Payment method"
+            >
+              {PAYMENT_METHOD_OPTIONS.map((option) => (
+                <label key={option.value} className={styles.method}>
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    className={styles.methodInput}
+                    checked={paymentMethod === option.value}
+                    onChange={() => setPaymentMethod(option.value)}
+                    disabled={completing}
+                  />
+                  <span>{option.label}</span>
+                </label>
+              ))}
+            </div>
           </div>
         ) : null}
 
@@ -295,8 +374,14 @@ export function CartPanel({
             Clear
           </Button>
           <Button
-            onClick={() => onComplete(paid)}
-            disabled={empty || completing || shortfall > 0}
+            onClick={() =>
+              onComplete({
+                amountPaid: paid,
+                discount: totals.discountTotal,
+                paymentMethod,
+              })
+            }
+            disabled={empty || completing || shortfall > 0 || discountInvalid}
             fullWidth
           >
             {completing ? 'Completing' : 'Complete order'}

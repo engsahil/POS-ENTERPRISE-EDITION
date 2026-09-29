@@ -235,7 +235,11 @@ export type OrderStatus =
 
 export type OrderType = 'dine-in' | 'takeaway' | 'delivery';
 
-export type PaymentMethod = 'cash' | 'card' | 'other';
+/**
+ * How the customer settled the order. `other` predates the explicit
+ * `digital` option and is still accepted for orders stored before it.
+ */
+export type PaymentMethod = 'cash' | 'card' | 'digital' | 'other';
 
 export interface OrderRecord extends BaseEntity {
   /** Human-readable sequential number, unique per installation. */

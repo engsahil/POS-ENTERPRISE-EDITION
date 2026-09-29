@@ -16,7 +16,6 @@ import {
   type CartLine,
   type CartTotals,
 } from '@/services/orderService';
-import type { VariantLabel } from '@/services/menuService';
 import type { ID, Paisa } from '@/types/common';
 import type { SelectedAddOn, SelectedTopping } from '@/types/domain';
 
@@ -24,11 +23,14 @@ export interface UseCartResult {
   lines: CartLine[];
   totals: CartTotals;
   isEmpty: boolean;
+  /** Order-level discount currently applied (paisa). */
+  discount: Paisa;
+  setDiscount: (value: Paisa) => void;
   addLine: (input: {
     menuItemId: ID;
     itemPriceId: ID | null;
     name: string;
-    sizeLabel: VariantLabel;
+    sizeLabel: string;
     unitPrice: Paisa;
   }) => void;
   addDeal: (input: { dealId: ID; name: string; unitPrice: Paisa }) => void;
@@ -43,6 +45,7 @@ export interface UseCartResult {
 
 export function useCart(): UseCartResult {
   const [lines, setLines] = useState<CartLine[]>([]);
+  const [discount, setDiscount] = useState<Paisa>(0);
   const [tax, setTax] = useState({ taxPercent: 0, taxInclusive: false });
 
   useEffect(() => {
@@ -54,6 +57,11 @@ export function useCart(): UseCartResult {
       active = false;
     };
   }, []);
+
+  // An emptied cart never carries a discount into the next order.
+  useEffect(() => {
+    if (lines.length === 0) setDiscount(0);
+  }, [lines.length]);
 
   const addLine = useCallback<UseCartResult['addLine']>((input) => {
     const key = cartLineKey(input.menuItemId, input.sizeLabel);
@@ -179,14 +187,16 @@ export function useCart(): UseCartResult {
   const clear = useCallback(() => setLines([]), []);
 
   const totals = useMemo(
-    () => calculateTotals(lines, tax.taxPercent, tax.taxInclusive),
-    [lines, tax],
+    () => calculateTotals(lines, tax.taxPercent, tax.taxInclusive, discount),
+    [lines, tax, discount],
   );
 
   return {
     lines,
     totals,
     isEmpty: lines.length === 0,
+    discount,
+    setDiscount,
     addLine,
     addDeal,
     setQuantity,

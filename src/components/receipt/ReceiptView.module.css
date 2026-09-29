@@ -88,17 +88,6 @@
   background-color: #ffffff;
 }
 
-/*
- * Tear line between the customer and kitchen receipts in a combined print
- * job. It only ever exists inside the temporary print container, never on
- * screen. Sized in millimetres so it reads correctly on the paper.
- */
-.cutLine {
-  border-top: 1px dashed #000000;
-  margin: 6mm 0;
-  height: 0;
-}
-
 @media (max-width: 639px) {
   .toolbar {
     flex-direction: column;

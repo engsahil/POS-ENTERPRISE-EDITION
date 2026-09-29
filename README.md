@@ -523,13 +523,22 @@ stacks the line instead of duplicating it; a different variant becomes its own
 line.
 
 The cart supports quantity steppers, per-line removal and Clear, and shows
-**Subtotal** and **Total** (plus a tax row when a rate is configured). The
-footer captures the **Customer paid** amount and calculates **Return / Change**
-immediately as it is typed: an empty field means the customer pays the exact
-total, an overpayment shows the change due, and an underpayment blocks
-completion with a "Short by ..." hint until it is covered. The paid and return
-figures are stored on the order and shown on the confirmation and receipt.
-Completing an order writes it permanently and shows the order ID.
+**Subtotal**, an optional **Discount** and **Total** (plus a tax row when a
+rate is configured). The **Discount** field takes a rupee amount that reduces
+the payable total the moment it is typed; values above the subtotal are
+flagged ("Discount cannot exceed ...") and block completion, so the total can
+never go negative. The footer also captures the **Customer paid** amount and
+calculates **Return / Change** immediately as it is typed: an empty field
+means the customer pays the exact total, an overpayment shows the change due,
+and an underpayment blocks completion with a "Short by ..." hint until it is
+covered — with or without a discount applied.
+
+The payment method is chosen with one radio — **Cash**, **Card** or
+**Digital Payment** (default Cash). It is stored on the order and sale, shown
+on the receipt ("Payment method"), and listed next to each order on the Sales
+screen. The paid and return figures are stored on the order and shown on the
+confirmation and receipt. Completing an order writes it permanently and shows
+the order ID.
 
 ### Money
 
@@ -596,13 +605,14 @@ the job on a Letter sheet with the receipt stranded in a corner. The height is
 measured from the rendered receipt, so the roll is exactly as long as the
 content and no trailing blank page is fed.
 
-**Print Both:** the customer and kitchen receipts are cloned into one
-temporary container and go through this same pipeline — one valid `@page`
-sized to the combined content, with a dashed tear line between the two
-receipts and no forced page break. The previous implementation injected its
-own `size: <width> auto` rule (dropped by the browser, printing on Letter)
-plus a `page-break-after` spacer, which is what produced the double-print
-glitch: stretched receipts and an unexpected blank trailing section.
+**Print Both** prints two genuinely separate pages in one job: page 1 is the
+customer receipt, page 2 is the kitchen receipt. The customer clone carries a
+real `break-after: page` (plus the legacy `page-break-after: always`), and the
+`@page` height is sized to the **tallest single receipt** rather than the
+stack, so the browser puts each receipt on its own physical page instead of
+fitting both onto one sheet — no squashing, no duplicated or missing content,
+and no third or blank page. Customer-only and Kitchen-only prints are
+unchanged: one receipt, one page, sized to its content.
 
 ### ESC/POS
 
@@ -629,9 +639,10 @@ toolbar; the chosen width is saved as the default for the next receipt.
 
 A receipt prints the restaurant name, logo, address, phone, email and receipt
 info (each omitted entirely when not configured), the order ID, date and time,
-every line with its size, quantity, unit price and amount, the subtotal, deal
-savings and tax where applicable, the total, the amount paid and the change
-due, and the configured footer.
+every line with its size, quantity, unit price and amount, the subtotal, an
+optional discount row (only when a discount was applied), deal savings and
+tax where applicable, the total, the payment method, the amount paid and the
+change due, and the configured footer.
 
 ### How the layout is kept from breaking
 
@@ -727,12 +738,19 @@ shows "No menu items yet".
 
 Each item supports a name, category, description, image, an availability
 toggle, and a variant selector: **Food sizes** (Small, Medium, Large, Extra
-Large, XL) or **Cold drink volume** (250 ml, 330 ml, 500 ml / Half Liter,
-1 Liter, 1.5 Liter) for beverages. Both sets use the same variant/price rows,
-so nothing about storage or sale flow differs. Every price is optional —
-leave a size or volume blank and the item simply is not sold in it. Prices are
-entered and displayed in Pakistani Rupees only, and stored as integer paisa so
-no floating-point drift is possible.
+Large, XL) or **Cold drink volume** for beverages. Food sizes are the fixed
+predefined set; volumes combine the predefined starting points (250 ml, 330
+ml, 500 ml / Half Liter, 1 Liter, 1.5 Liter) with a **custom volume row** —
+enter any value and unit (`Volume [350] Unit [ml] Price [100]` gives
+"350 ml", `Volume [2] Unit [L] Price [300]` gives "2 Liter") and it becomes a
+normal stored label like any other. Custom volumes are never restricted to a
+hardcoded list: they round-trip through Add/Edit, appear as their own buttons
+in the Menu list and POS, and flow through the cart, orders and both
+receipts. Both kinds use the same variant/price rows, so nothing about
+storage or sale flow differs. Every price is optional — leave a size or
+volume blank and the item simply is not sold in it. Prices are entered and
+displayed in Pakistani Rupees only, and stored as integer paisa so no
+floating-point drift is possible.
 
 ### Storage shape
 

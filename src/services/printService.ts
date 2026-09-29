@@ -63,8 +63,18 @@ export function clearPageSize(): void {
 
 export interface PrintOptions {
   width: ReceiptWidth;
-  /** Element containing the receipt to print. */
+  /** Element containing the receipt(s) to print. */
   container: HTMLElement | null;
+  /**
+   * Print the container's children as separate pages instead of one sheet.
+   *
+   * Used by "Print Both": the page height is then the tallest single
+   * receipt (each `[data-receipt-width]` child), not the whole stack, so
+   * the browser places the first receipt on page 1 and the second — after
+   * an explicit `break-after: page` set by the caller — on page 2, with no
+   * squashing onto one physical page and no third page.
+   */
+  paginate?: boolean;
 }
 
 /**
@@ -75,7 +85,7 @@ export interface PrintOptions {
  * temporarily moved to be a direct child of <body> so that no scrollable or
  * clipping ancestor can truncate a long receipt to one screen height.
  */
-export function printReceipt({ width, container }: PrintOptions): void {
+export function printReceipt({ width, container, paginate }: PrintOptions): void {
   if (!container) {
     window.print();
     return;
@@ -92,8 +102,18 @@ export function printReceipt({ width, container }: PrintOptions): void {
 
   // Measure AFTER re-parenting: the container is now free of any scrollable
   // ancestor, so scrollHeight reflects the full receipt rather than one
-  // screenful.
-  applyPageSize(width, measureHeightMm(container));
+  // screenful. With `paginate`, every receipt child is measured on its own
+  // and the tallest one sizes the page.
+  let heightMm = measureHeightMm(container);
+  if (paginate) {
+    const receipts = Array.from(
+      container.querySelectorAll<HTMLElement>('[data-receipt-width]'),
+    );
+    if (receipts.length > 0) {
+      heightMm = Math.max(...receipts.map((receipt) => measureHeightMm(receipt)));
+    }
+  }
+  applyPageSize(width, heightMm);
 
   const restore = () => {
     container.classList.remove('print-root');

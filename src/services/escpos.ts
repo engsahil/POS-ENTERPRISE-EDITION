@@ -7,6 +7,7 @@
 
 import type { ReceiptModel, ReceiptWidth } from './receiptService';
 import { formatMoney } from '@/utils/currency';
+import { formatPaymentMethod } from '@/utils/payment';
 
 export const COLUMNS: Record<ReceiptWidth, number> = {
   '58mm': 32,
@@ -193,6 +194,11 @@ export function renderPlainText(
   out.push(divider);
 
   out.push(twoColumns('Subtotal', formatMoney(model.subtotal), cols));
+  if (model.discountTotal > 0) {
+    out.push(
+      twoColumns('Discount', `-${formatMoney(model.discountTotal)}`, cols),
+    );
+  }
   if (model.savingsTotal > 0) {
     out.push(
       twoColumns('Deal savings', `-${formatMoney(model.savingsTotal)}`, cols),
@@ -205,7 +211,14 @@ export function renderPlainText(
   out.push(divider);
   out.push(twoColumns('TOTAL', formatMoney(model.grandTotal), cols));
   if (model.amountPaid != null) {
-    out.push(twoColumns(`Paid (${model.paymentMethod})`, formatMoney(model.amountPaid), cols));
+    out.push(
+      twoColumns(
+        'Payment method',
+        formatPaymentMethod(model.paymentMethod),
+        cols,
+      ),
+    );
+    out.push(twoColumns('Paid', formatMoney(model.amountPaid), cols));
   }
   if (model.changeDue != null && model.changeDue > 0) {
     out.push(twoColumns('Change', formatMoney(model.changeDue), cols));
@@ -319,6 +332,9 @@ export function encodeReceipt(
   line('-'.repeat(cols));
 
   line(twoColumns('Subtotal', formatMoney(model.subtotal), cols));
+  if (model.discountTotal > 0) {
+    line(twoColumns('Discount', `-${formatMoney(model.discountTotal)}`, cols));
+  }
   if (model.savingsTotal > 0) {
     line(twoColumns('Deal savings', `-${formatMoney(model.savingsTotal)}`, cols));
   }
@@ -332,7 +348,14 @@ export function encodeReceipt(
   line(twoColumns('TOTAL', formatMoney(model.grandTotal), cols));
   push(CMD.BOLD_OFF);
   if (model.amountPaid != null) {
-    line(twoColumns(`Paid (${model.paymentMethod})`, formatMoney(model.amountPaid), cols));
+    line(
+      twoColumns(
+        'Payment method',
+        formatPaymentMethod(model.paymentMethod),
+        cols,
+      ),
+    );
+    line(twoColumns('Paid', formatMoney(model.amountPaid), cols));
   }
   if (model.changeDue != null && model.changeDue > 0) {
     line(twoColumns('Change', formatMoney(model.changeDue), cols));

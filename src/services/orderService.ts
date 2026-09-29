@@ -19,7 +19,6 @@ import {
 import { getTaxConfig } from './restaurantService';
 import { settingsService, SETTING_KEYS } from './settingsService';
 import { syncQueueService } from './syncQueueService';
-import type { VariantLabel } from './menuService';
 import type {
   OrderItemRecord,
   OrderRecord,
@@ -54,7 +53,7 @@ export interface CartLine {
   dealId: ID | null;
   itemPriceId: ID | null;
   name: string;
-  sizeLabel: VariantLabel | null;
+  sizeLabel: string | null;
   unitPrice: Paisa;
   quantity: number;
   toppings: SelectedTopping[];
@@ -63,6 +62,8 @@ export interface CartLine {
 
 export interface CartTotals {
   subtotal: Paisa;
+  /** Order-level discount, clamped so it can never exceed the subtotal. */
+  discountTotal: Paisa;
   taxTotal: Paisa;
   grandTotal: Paisa;
   itemCount: number;
@@ -73,7 +74,7 @@ export interface CartTotals {
 export const MAX_LINE_QUANTITY = 999;
 
 /** Stable key so the same item+size stacks instead of duplicating. */
-export function cartLineKey(menuItemId: ID, size: VariantLabel): string {
+export function cartLineKey(menuItemId: ID, size: string): string {
   return `${menuItemId}::${size}`;
 }
 
@@ -107,11 +108,16 @@ export function lineTotal(line: CartLine): Paisa {
  * Exclusive tax is added on top of the subtotal. Inclusive tax is extracted
  * from it, so the grand total still equals the sum of the displayed prices.
  * Rounding happens once, at the tax figure, to avoid per-line drift.
+ *
+ * An optional order-level `discount` is subtracted from the payable total.
+ * It is clamped to the displayed subtotal, so the grand total can never go
+ * negative and a discount of zero totals exactly as it did before.
  */
 export function calculateTotals(
   lines: CartLine[],
   taxPercent: number,
   taxInclusive: boolean,
+  discount = 0,
 ): CartTotals {
   const safeLineTotal = (line: CartLine): number => {
     const total = lineTotal(line);
@@ -128,8 +134,9 @@ export function calculateTotals(
     ? Math.min(100, Math.max(0, taxPercent))
     : 0;
 
+  let base: Omit<CartTotals, 'discountTotal'>;
   if (rate === 0) {
-    return {
+    base = {
       subtotal: gross,
       taxTotal: 0,
       grandTotal: gross,
@@ -137,11 +144,9 @@ export function calculateTotals(
       taxPercent: 0,
       taxInclusive,
     };
-  }
-
-  if (taxInclusive) {
+  } else if (taxInclusive) {
     const net = Math.round((gross * 100) / (100 + rate));
-    return {
+    base = {
       subtotal: net,
       taxTotal: gross - net,
       grandTotal: gross,
@@ -149,16 +154,27 @@ export function calculateTotals(
       taxPercent: rate,
       taxInclusive,
     };
+  } else {
+    const taxTotal = Math.round((gross * rate) / 100);
+    base = {
+      subtotal: gross,
+      taxTotal,
+      grandTotal: gross + taxTotal,
+      itemCount,
+      taxPercent: rate,
+      taxInclusive,
+    };
   }
 
-  const taxTotal = Math.round((gross * rate) / 100);
+  // Invalid, negative or oversized discounts are clamped rather than trusted.
+  const discountTotal = isFiniteNumber(discount)
+    ? Math.min(Math.max(0, Math.round(discount)), base.subtotal)
+    : 0;
+
   return {
-    subtotal: gross,
-    taxTotal,
-    grandTotal: gross + taxTotal,
-    itemCount,
-    taxPercent: rate,
-    taxInclusive,
+    ...base,
+    discountTotal,
+    grandTotal: base.grandTotal - discountTotal,
   };
 }
 
@@ -180,6 +196,8 @@ export interface CompleteOrderInput {
   lines: CartLine[];
   paymentMethod?: PaymentMethod;
   amountPaid?: Paisa;
+  /** Order-level discount in paisa; clamped to the subtotal. */
+  discount?: Paisa;
   orderType?: OrderType;
   tableLabel?: string;
   customerName?: string;
@@ -229,11 +247,17 @@ export const orderService = {
     }));
 
     const { taxPercent, taxInclusive } = await getTaxConfig();
-    const totals = calculateTotals(validated, taxPercent, taxInclusive);
+    const totals = calculateTotals(
+      validated,
+      taxPercent,
+      taxInclusive,
+      input.discount ?? 0,
+    );
 
     if (
       !Number.isSafeInteger(totals.grandTotal) ||
       !Number.isSafeInteger(totals.subtotal) ||
+      !Number.isSafeInteger(totals.discountTotal) ||
       totals.grandTotal < 0
     ) {
       throw new ValidationError('Order total could not be calculated safely.');
@@ -257,7 +281,7 @@ export const orderService = {
       status: 'completed',
       orderType,
       subtotal: totals.subtotal,
-      discountTotal: 0,
+      discountTotal: totals.discountTotal,
       taxTotal: totals.taxTotal,
       grandTotal: totals.grandTotal,
       paymentMethod,
@@ -307,7 +331,7 @@ export const orderService = {
       businessDate: businessDateOf(new Date()),
       completedAt: timestamp,
       subtotal: totals.subtotal,
-      discountTotal: 0,
+      discountTotal: totals.discountTotal,
       taxTotal: totals.taxTotal,
       grandTotal: totals.grandTotal,
       paymentMethod,
